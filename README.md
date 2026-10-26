@@ -61,12 +61,14 @@ Diseñar y desarrollar una solución computacional basada en modelos de optimiza
 
 ## 3. Equipo y roles
 
-| Rol | Integrante | Responsabilidades | Módulos a cargo |
-|---|---|---|---|
-| Líder de Proyecto / Analista de Negocio | **Felipe Beltrán** | Coordinación general, seguimiento del cronograma, informe técnico IEEE y validación de las restricciones del modelo de negocio | `docs/`, `data/` |
-| Ingeniero de Modelado y Optimización | **Baez** | Formulación matemática de la red (grafo, variables, función objetivo, restricciones) e implementación del solucionador exacto | `src/modelo/`, `src/exacto/` |
-| Desarrollador de Metaheurísticas | **Martín** | Diseño, codificación y ajuste de parámetros del AG (cromosoma, fitness, selección, cruce y mutación) | `src/genetico/` |
-| Desarrollador de Software e Interfaz | **Navarro** | Arquitectura de software, interfaz de parametrización dinámica, visualización del análisis de sensibilidad y reportes comparativos | `src/interfaz/`, `src/sensibilidad/`, `src/comparacion/` |
+**Grupo: Orion**
+
+| Rol | Integrante | Código | Responsabilidades | Módulos a cargo |
+|---|---|---|---|---|
+| Líder de Proyecto / Analista de Negocio | **Felipe Beltrán** | 160005207 | Coordinación general, seguimiento del cronograma, informe técnico IEEE y validación de las restricciones del modelo de negocio | `docs/`, `data/` |
+| Ingeniero de Modelado y Optimización | **Julián Báez** | 160005203 | Formulación matemática de la red (grafo, variables, función objetivo, restricciones) e implementación del solucionador exacto | `src/modelo/`, `src/exacto/` |
+| Desarrollador de Metaheurísticas | **Martín Pineda** | 160005227 | Diseño, codificación y ajuste de parámetros del AG (cromosoma, fitness, selección, cruce y mutación) | `src/genetico/` |
+| Desarrollador de Software e Interfaz | **Juan Navarro** | 160005245 | Arquitectura de software, interfaz de parametrización dinámica, visualización del análisis de sensibilidad y reportes comparativos | `src/interfaz/`, `src/sensibilidad/`, `src/comparacion/` |
 
 ## 4. Modelo matemático
 
@@ -246,11 +248,11 @@ Para agregar una empresa o una planta basta con añadir una fila a `empresas.csv
 
 | Fase | Descripción | Responsable principal | Estado |
 |---|---|---|---|
-| Fase 1 | Modelado de la red logística (grafo y modelo de PL) | Baez | ⬜ |
-| Fase 2 | Implementación y validación de la solución exacta | Baez | ⬜ |
-| Fase 3 | Algoritmo Genético | Martín | ⬜ |
-| Fase 4 | Interfaz, análisis de sensibilidad y reporte comparativo | Navarro | ⬜ |
-| — | Informe técnico en formato IEEE | Felipe | ⬜ |
+| Fase 1 | Modelado de la red logística (grafo y modelo de PL) | Julián Báez | ⬜ |
+| Fase 2 | Implementación y validación de la solución exacta | Julián Báez | ⬜ |
+| Fase 3 | Algoritmo Genético | Martín Pineda | ⬜ |
+| Fase 4 | Interfaz, análisis de sensibilidad y reporte comparativo | Juan David Navarro | ⬜ |
+| — | Informe técnico en formato IEEE | Felipe Beltrán | ⬜ |
 | — | Sustentación práctica con escenarios en vivo | Todo el equipo | ⬜ |
 
 **Entregables:**
