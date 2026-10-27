@@ -1,0 +1,398 @@
+{
+  "proyecto": "Optimización de la Red Logística — EcoResiduos del Llano (Grupo Orion)",
+  "equipo": {
+    "FB": { "nombre": "David Felipe Beltrán", "rol": "Líder de Proyecto / Analista de Negocio (PO y SM)", "github": "" },
+    "JB": { "nombre": "Julián Báez", "rol": "Ingeniero de Modelado y Optimización", "github": "" },
+    "MP": { "nombre": "Martín Pineda", "rol": "Desarrollador de Metaheurísticas", "github": "" },
+    "JN": { "nombre": "Juan David Navarro", "rol": "Desarrollador de Software e Interfaz", "github": "" }
+  },
+  "sprints": [
+    { "nombre": "Sprint 1", "inicio": "2026-10-26", "fin": "2026-11-03",
+      "objetivo": "La red de EcoResiduos es 100 % parametrizable desde la web, se resuelve con el modelo exacto, se ve en el mapa y el motor del AG ya responde por API." },
+    { "nombre": "Sprint 2", "inicio": "2026-11-04", "fin": "2026-11-12",
+      "objetivo": "El gerente puede simular escenarios, ver precios sombra y comparar el exacto con el AG en un reporte exportable; el sistema está desplegado y el informe IEEE está listo para sustentar." }
+  ],
+  "epicas": {
+    "E1": "Gestión dinámica de la red logística",
+    "E2": "Optimización exacta de la red",
+    "E3": "Optimización metaheurística con Algoritmo Genético",
+    "E4": "Análisis de sensibilidad",
+    "E5": "Comparación, historial y reportes"
+  },
+  "historias": [
+    {
+      "id": "HU-01", "titulo": "Gestionar empresas agropecuarias", "epica": "E1", "prioridad": "Must", "sp": 5, "sprint": "Sprint 1", "responsable": "JN",
+      "areas": ["backend", "frontend"],
+      "historia": "Como analista logístico, quiero registrar, editar, desactivar y listar empresas agropecuarias con su municipio, tipo de residuo, oferta semanal y coordenadas, para mantener actualizada la oferta de la red sin modificar el código.",
+      "criterios": [
+        "**Dado** el formulario de empresa, **cuando** ingreso código, nombre, municipio, tipo de residuo, oferta mayor que 0 y coordenadas válidas, **entonces** la empresa queda guardada y aparece en la lista y en el mapa.",
+        "**Dado** una oferta menor o igual a 0 o un código ya existente, **cuando** guardo, **entonces** el sistema muestra el error junto al campo y no guarda nada.",
+        "**Dado** una empresa activa, **cuando** la desactivo, **entonces** deja de participar en nuevas ejecuciones pero se conserva en el historial.",
+        "**Dado** que hay más de 10 empresas activas, **cuando** ejecuto cualquier modelo, **entonces** todas se incluyen sin cambios en el código."
+      ],
+      "tareas": [
+        ["Esquemas Pydantic, NodoRepository, NodoService y endpoints CRUD de nodos", "JB", 3],
+        ["Pantalla de lista y formulario de empresas (responsive, RHF + Zod)", "JN", 4],
+        ["Pruebas unitarias y de API del CRUD de empresas", "FB", 2]
+      ],
+      "pruebas": ["CP-01-01", "CP-01-02", "CP-01-03", "CP-01-04"]
+    },
+    {
+      "id": "HU-02", "titulo": "Gestionar plantas de procesamiento", "epica": "E1", "prioridad": "Must", "sp": 3, "sprint": "Sprint 1", "responsable": "JN",
+      "areas": ["backend", "frontend"],
+      "historia": "Como analista logístico, quiero registrar, editar y desactivar plantas con su capacidad semanal y costo de operación por tonelada, para representar la capacidad real de procesamiento de Villavicencio, Restrepo, Granada, Puerto Gaitán y futuras sedes.",
+      "criterios": [
+        "**Dado** el formulario de planta, **cuando** ingreso capacidad mayor que 0 y costo de operación mayor o igual a 0, **entonces** la planta queda guardada.",
+        "**Dado** que registro una planta nueva, **cuando** se guarda, **entonces** el sistema crea automáticamente las rutas desde cada fuente activa con la distancia pendiente y avisa cuántas faltan por completar.",
+        "**Dado** una capacidad negativa o vacía, **cuando** guardo, **entonces** se muestra el error y no se guarda."
+      ],
+      "tareas": [
+        ["Reglas de validación de planta y generación automática de rutas", "JB", 2],
+        ["Pantalla de plantas reutilizando los componentes de HU-01", "JN", 2],
+        ["Pruebas de API de plantas", "FB", 1]
+      ],
+      "pruebas": ["CP-02-01", "CP-02-02"]
+    },
+    {
+      "id": "HU-03", "titulo": "Gestionar rutas, distancias y matriz de costos", "epica": "E1", "prioridad": "Must", "sp": 8, "sprint": "Sprint 1", "responsable": "JB",
+      "areas": ["backend", "frontend"],
+      "historia": "Como analista logístico, quiero editar en una grilla la distancia de cada ruta empresa–planta, habilitar o deshabilitar rutas y ver el costo unitario resultante, para modificar dinámicamente la matriz de costos que usan los modelos.",
+      "criterios": [
+        "**Dado** la matriz de rutas, **cuando** edito una distancia y guardo, **entonces** el costo unitario se recalcula como cᵢⱼ = k·dᵢⱼ + oⱼ (o con el costo por t·km propio de la ruta si existe).",
+        "**Dado** una ruta deshabilitada, **cuando** ejecuto un modelo, **entonces** no se crea la variable xᵢⱼ ni el gen correspondiente.",
+        "**Dado** una distancia menor o igual a 0, **cuando** guardo, **entonces** se rechaza el cambio con un mensaje en la celda.",
+        "**Dado** una pantalla de 360 px, **cuando** abro la matriz, **entonces** la primera columna queda fija y la grilla se desplaza horizontalmente dentro de su contenedor."
+      ],
+      "tareas": [
+        ["Endpoints de matriz, actualización por lote y generación de rutas faltantes", "JB", 4],
+        ["Cálculo de costos unitarios y costo por t·km opcional por ruta", "JB", 1],
+        ["Grilla editable de distancias y costos con columna fija", "JN", 6],
+        ["Pruebas de cálculo de costos y validaciones", "FB", 2]
+      ],
+      "pruebas": ["CP-03-01", "CP-03-02", "CP-03-03"]
+    },
+    {
+      "id": "HU-04", "titulo": "Configurar parámetros globales del negocio", "epica": "E1", "prioridad": "Must", "sp": 3, "sprint": "Sprint 1", "responsable": "JB",
+      "areas": ["backend", "frontend"],
+      "historia": "Como analista logístico, quiero modificar el costo de transporte por tonelada-kilómetro, la tarifa de recepción por tonelada, la penalización de la planta ficticia y el λ por defecto del AG, para ajustar los coeficientes del modelo de negocio sin modificar el código.",
+      "criterios": [
+        "**Dado** la pantalla de parámetros, **cuando** cambio k de 350 a 420 COP/t·km y guardo, **entonces** la matriz de costos y las siguientes ejecuciones usan el nuevo valor.",
+        "**Dado** un valor negativo o no numérico, **cuando** guardo, **entonces** el sistema lo rechaza.",
+        "**Dado** una ejecución anterior, **cuando** cambio un parámetro, **entonces** la ejecución anterior conserva los valores con los que se calculó (snapshot)."
+      ],
+      "tareas": [
+        ["Endpoint de parámetros y datos semilla", "FB", 1],
+        ["Pantalla de parámetros", "JN", 2],
+        ["Pruebas de parámetros", "FB", 1]
+      ],
+      "pruebas": ["CP-04-01", "CP-04-02"]
+    },
+    {
+      "id": "HU-05", "titulo": "Importar/exportar datos y cargar el caso base regional", "epica": "E1", "prioridad": "Should", "sp": 5, "sprint": "Sprint 1", "responsable": "FB",
+      "areas": ["backend", "frontend"],
+      "historia": "Como analista logístico, quiero importar y exportar la red completa en Excel o CSV con una plantilla, y cargar con un clic el caso base del Meta, para alimentar el sistema rápidamente con datos reales y preparar los casos de prueba de la sustentación.",
+      "criterios": [
+        "**Dado** un archivo con las hojas empresas, plantas, distancias y parámetros, **cuando** lo importo y no tiene errores, **entonces** se insertan o actualizan los registros en una sola transacción y se muestra el resumen.",
+        "**Dado** un archivo con filas inválidas, **cuando** lo importo, **entonces** se muestra la lista de errores por hoja, fila y columna, y la base de datos no cambia.",
+        "**Dado** el botón 'Cargar caso base', **cuando** lo pulso y confirmo, **entonces** quedan cargadas las 10 empresas, las 4 plantas y las 40 rutas de la sección 17.",
+        "**Dado** la red actual, **cuando** exporto, **entonces** descargo un archivo con el mismo formato de la plantilla."
+      ],
+      "tareas": [
+        ["Servicio de importación/exportación con pandas y openpyxl, con validación por fila", "FB", 4],
+        ["Seeder del caso base regional (sección 17)", "FB", 2],
+        ["Pantalla de importación con tabla de errores", "JN", 2],
+        ["Pruebas de importación con archivos válidos e inválidos", "FB", 1]
+      ],
+      "pruebas": ["CP-05-01", "CP-05-02"]
+    },
+    {
+      "id": "HU-06", "titulo": "Validar el balance y la consistencia de la red", "epica": "E2", "prioridad": "Must", "sp": 3, "sprint": "Sprint 1", "responsable": "JB",
+      "areas": ["backend", "optimizacion", "frontend"],
+      "historia": "Como analista logístico, quiero que el sistema valide la red antes de optimizar (balance oferta/capacidad, nodos aislados, rutas sin distancia), para evitar ejecuciones infactibles y entender los cuellos de botella.",
+      "criterios": [
+        "**Dado** la red base (Σaᵢ = 890 t, Σbⱼ = 950 t), **cuando** valido, **entonces** el resultado es 'válida' con una holgura de capacidad de 60 t.",
+        "**Dado** Σaᵢ > Σbⱼ, **cuando** valido, **entonces** el sistema indica que agregará una planta ficticia con capacidad Σaᵢ − Σbⱼ y costo de penalización.",
+        "**Dado** una empresa sin ninguna ruta habilitada, **cuando** valido, **entonces** se reporta como error 'nodo aislado' y no se permite optimizar."
+      ],
+      "tareas": [
+        ["RedBuilder (BD → matrices NumPy) y ValidadorRed con planta ficticia", "JB", 3],
+        ["Panel de diagnóstico con semáforo", "JN", 1],
+        ["Pruebas del validador", "FB", 1]
+      ],
+      "pruebas": ["CP-06-01", "CP-06-02", "CP-06-03"]
+    },
+    {
+      "id": "HU-07", "titulo": "Resolver el modelo de transporte con el método exacto", "epica": "E2", "prioridad": "Must", "sp": 8, "sprint": "Sprint 1", "responsable": "JB",
+      "areas": ["backend", "optimizacion", "bd"],
+      "historia": "Como gerente de operaciones, quiero resolver el modelo de programación lineal y obtener el óptimo global con su verificación de restricciones, para conocer la distribución de flujos de mínimo costo.",
+      "criterios": [
+        "**Dado** el caso base, **cuando** ejecuto el modelo exacto, **entonces** el estado es 'Óptimo' y Z* = $64.691.000 COP por semana.",
+        "**Dado** una solución, **cuando** termina la ejecución, **entonces** el verificador confirma que Σⱼ xᵢⱼ = aᵢ, Σᵢ xᵢⱼ ≤ bⱼ y xᵢⱼ ≥ 0 con tolerancia de 10⁻⁶, y reporta 0 violaciones.",
+        "**Dado** una ejecución terminada, **entonces** se guardan en la base de datos el costo, el tiempo, los flujos, los duales y un snapshot de la red.",
+        "**Dado** una red de hasta 100 × 20 nodos, **cuando** resuelvo, **entonces** el tiempo de respuesta es menor de 5 s."
+      ],
+      "tareas": [
+        ["ModeloTransporte con PuLP (variables, objetivo, restricciones) y ModeloFactory", "JB", 4],
+        ["SolverExacto con CBC y extracción de duales y holguras", "JB", 2],
+        ["VerificadorRestricciones", "JB", 2],
+        ["Persistencia de ejecución y flujos (migración V2) y endpoint", "JB", 3],
+        ["Pruebas con el valor de referencia Z* del caso base", "FB", 2]
+      ],
+      "pruebas": ["CP-07-01", "CP-07-02", "CP-07-03", "CP-07-04"]
+    },
+    {
+      "id": "HU-08", "titulo": "Visualizar la red y los flujos óptimos", "epica": "E2", "prioridad": "Must", "sp": 5, "sprint": "Sprint 1", "responsable": "JN",
+      "areas": ["frontend", "backend"],
+      "historia": "Como gerente de operaciones, quiero ver en un mapa del Meta los nodos y los flujos asignados, una tabla de asignación y el uso de cada planta, para entender y comunicar la solución.",
+      "criterios": [
+        "**Dado** un resultado, **cuando** lo abro, **entonces** el mapa muestra solo los arcos con flujo mayor que 0 y su grosor es proporcional a las toneladas.",
+        "**Dado** el caso base, **entonces** el uso de plantas es Villavicencio 100 %, Restrepo 100 %, Granada 98 % y Puerto Gaitán 75 %, y las plantas saturadas se resaltan.",
+        "**Dado** un ancho de 360 px, **cuando** abro el resultado, **entonces** los KPI se apilan en 2 columnas y no hay desplazamiento horizontal de la página."
+      ],
+      "tareas": [
+        ["Endpoint de resultado (flujos, uso de plantas, coordenadas)", "JB", 1],
+        ["Mapa Leaflet, tabla de asignación y KPI de uso de plantas", "JN", 6],
+        ["Pruebas de componentes y prueba responsive", "FB", 1]
+      ],
+      "pruebas": ["CP-08-01", "CP-08-02", "CP-08-03"]
+    },
+    {
+      "id": "HU-09", "titulo": "Configurar y ejecutar el Algoritmo Genético", "epica": "E3", "prioridad": "Must", "sp": 13, "sprint": "Sprint 1", "responsable": "MP",
+      "areas": ["optimizacion", "backend", "frontend"],
+      "historia": "Como analista de optimización, quiero configurar desde la interfaz el tamaño de población, generaciones, tasas de cruce y mutación, tipo de selección y cruce, elitismo, λ y semilla, y ejecutar el AG, para obtener soluciones cuasi-óptimas y estudiar el efecto de los parámetros.",
+      "criterios": [
+        "**Dado** parámetros válidos, **cuando** ejecuto el AG, **entonces** obtengo el mejor costo, el tiempo, las violaciones y la matriz de flujos, y la ejecución queda guardada.",
+        "**Dado** la misma semilla y los mismos parámetros, **cuando** ejecuto dos veces, **entonces** obtengo exactamente el mismo resultado.",
+        "**Dado** el caso base con los parámetros por defecto, **cuando** ejecuto 10 corridas, **entonces** el gap promedio frente a Z* es menor o igual a 2 % y ninguna solución final viola la oferta.",
+        "**Dado** una tasa fuera de [0, 1] o una población menor que 10, **cuando** envío, **entonces** el sistema la rechaza con un mensaje claro."
+      ],
+      "tareas": [
+        ["Estudio del AG para el problema de transporte y diseño de la representación", "MP", 3],
+        ["Cromosoma, población inicial aleatoria y heurística de costo mínimo", "MP", 5],
+        ["Función de aptitud penalizada y reparador", "MP", 3],
+        ["Selección por torneo y ruleta", "MP", 2],
+        ["Cruce de 1 y 2 puntos y mutación por transferencia", "MP", 3],
+        ["Elitismo, ciclo evolutivo, semilla y criterio de parada", "MP", 3],
+        ["Endpoint y persistencia de la ejecución y la convergencia", "MP", 2],
+        ["Formulario de parámetros del AG", "JN", 2],
+        ["Pruebas unitarias de operadores (conservación de oferta, reproducibilidad)", "MP", 3]
+      ],
+      "pruebas": ["CP-09-01", "CP-09-02", "CP-09-03", "CP-09-04"]
+    },
+    {
+      "id": "HU-10", "titulo": "Visualizar la convergencia y la mejor solución del AG", "epica": "E3", "prioridad": "Should", "sp": 3, "sprint": "Sprint 2", "responsable": "MP",
+      "areas": ["optimizacion", "frontend"],
+      "historia": "Como analista de optimización, quiero ver la curva del mejor costo y del costo promedio por generación junto con la línea del óptimo exacto, para evaluar la convergencia y ajustar los parámetros.",
+      "criterios": [
+        "**Dado** una ejecución del AG, **cuando** abro la convergencia, **entonces** veo las series de mejor costo y costo promedio por generación.",
+        "**Dado** que existe una ejecución exacta con la misma red, **entonces** se dibuja la línea de Z* y se muestra el gap final.",
+        "**Dado** que el elitismo está activo, **entonces** la serie del mejor costo nunca aumenta."
+      ],
+      "tareas": [
+        ["Endpoint de convergencia con óptimo de referencia", "MP", 1],
+        ["Gráfica de convergencia y panel de la mejor solución", "JN", 3],
+        ["Pruebas de la serie de convergencia", "FB", 1]
+      ],
+      "pruebas": ["CP-10-01"]
+    },
+    {
+      "id": "HU-11", "titulo": "Simular escenarios de sensibilidad", "epica": "E4", "prioridad": "Must", "sp": 8, "sprint": "Sprint 2", "responsable": "JB",
+      "areas": ["backend", "optimizacion", "frontend", "bd"],
+      "historia": "Como gerente, quiero crear escenarios con variaciones porcentuales del costo de combustible/transporte, de la oferta (global o por empresa) y de la capacidad de plantas, y ejecutarlos con ambos métodos, para observar el impacto sobre el costo, la asignación y el comportamiento del exacto y del AG.",
+      "criterios": [
+        "**Dado** el escenario 'Combustible +20 %', **cuando** lo ejecuto, **entonces** Z* = $69.385.200 y la asignación no cambia (misma base).",
+        "**Dado** el escenario 'Capacidad de Granada −20 %', **cuando** lo ejecuto, **entonces** Z* = $65.039.750 y E03 envía 45 t a Villavicencio.",
+        "**Dado** un escenario que deja Σaᵢ > Σbⱼ, **cuando** lo ejecuto, **entonces** se aplica la planta ficticia y se reporta el residuo no procesado.",
+        "**Dado** cualquier escenario, **entonces** se ejecutan el exacto y el AG y se guarda la comparación (insumo de HU-13)."
+      ],
+      "tareas": [
+        ["Modelos Escenario y AjusteEscenario (migración V3) y CRUD", "JB", 2],
+        ["EscenarioService: aplicación de ajustes y ejecución con ambos métodos", "JB", 4],
+        ["Integración del AG en la ejecución de escenarios", "MP", 2],
+        ["Pantalla de escenarios con tabla base vs. escenario", "JN", 5],
+        ["Pruebas con los valores de referencia de los escenarios", "FB", 2]
+      ],
+      "pruebas": ["CP-11-01", "CP-11-02", "CP-11-03"]
+    },
+    {
+      "id": "HU-12", "titulo": "Consultar precios sombra, costos reducidos y rangos de estabilidad", "epica": "E4", "prioridad": "Must", "sp": 8, "sprint": "Sprint 2", "responsable": "JB",
+      "areas": ["optimizacion", "backend", "frontend"],
+      "historia": "Como gerente, quiero ver los precios sombra de las restricciones de oferta y capacidad, los costos reducidos y los rangos en que pueden variar costos y capacidades sin cambiar la base óptima, para identificar cuellos de botella y el valor económico de ampliar la capacidad.",
+      "criterios": [
+        "**Dado** el caso base, **entonces** el precio sombra de capacidad es −17.750 COP/t en Villavicencio, −14.250 COP/t en Restrepo y 0 en Granada y Puerto Gaitán.",
+        "**Dado** el caso base, **entonces** las holguras de capacidad son 0, 0, 5 y 55 t respectivamente.",
+        "**Dado** un costo cᵢⱼ cambiado a un valor dentro de su rango reportado, **cuando** re-optimizo, **entonces** la base óptima no cambia.",
+        "**Dado** los rangos, **entonces** se muestran en una gráfica de tornado."
+      ],
+      "tareas": [
+        ["Extracción de duales, costos reducidos y holguras (PuLP .pi, .dj, .slack)", "JB", 3],
+        ["Rangos por re-optimización paramétrica (búsqueda binaria hasta cambio de base)", "JB", 5],
+        ["Tablas de duales y gráfica de tornado", "JN", 4],
+        ["Pruebas contra valores calculados a mano", "FB", 2]
+      ],
+      "pruebas": ["CP-12-01", "CP-12-02", "CP-12-03"]
+    },
+    {
+      "id": "HU-13", "titulo": "Generar el reporte comparativo exacto vs. AG", "epica": "E5", "prioridad": "Must", "sp": 5, "sprint": "Sprint 2", "responsable": "MP",
+      "areas": ["backend", "optimizacion", "frontend"],
+      "historia": "Como gerente, quiero un reporte que compare costo total, tiempo de ejecución, gap y violaciones del exacto y del AG en el caso base y en cada escenario, para decidir qué método usar y justificarlo.",
+      "criterios": [
+        "**Dado** una comparación, **entonces** el gap se calcula como (Z_AG − Z*) / Z* × 100.",
+        "**Dado** N corridas del AG (10 por defecto), **entonces** el reporte muestra el mejor, el promedio, la desviación estándar y el peor costo.",
+        "**Dado** varios escenarios, **entonces** el reporte tiene una fila por escenario con Z*, Z_AG, gap, tiempos y cambio de asignación."
+      ],
+      "tareas": [
+        ["ComparacionService (gap, estadísticas de N corridas, por escenario)", "MP", 4],
+        ["Pantalla del reporte comparativo", "JN", 4],
+        ["Pruebas del cálculo de gap y estadísticas", "FB", 1]
+      ],
+      "pruebas": ["CP-13-01", "CP-13-02"]
+    },
+    {
+      "id": "HU-14", "titulo": "Evaluar la escalabilidad de ambos métodos", "epica": "E5", "prioridad": "Should", "sp": 5, "sprint": "Sprint 2", "responsable": "MP",
+      "areas": ["optimizacion", "backend", "frontend"],
+      "historia": "Como analista de optimización, quiero generar instancias sintéticas de distintos tamaños (por ejemplo 10×4, 20×6, 50×10 y 100×20) y medir tiempo y gap de ambos métodos, para demostrar la escalabilidad del sistema y comparar los enfoques.",
+      "criterios": [
+        "**Dado** una configuración de tamaños, **cuando** la ejecuto, **entonces** recibo un identificador de tarea (202) y puedo consultar el progreso.",
+        "**Dado** una semilla, **entonces** el generador produce siempre la misma instancia y siempre factible (Σbⱼ ≥ Σaᵢ).",
+        "**Dado** que el proceso termina, **entonces** veo gráficas de tiempo vs. tamaño y gap vs. tamaño."
+      ],
+      "tareas": [
+        ["GeneradorInstancias con semilla", "MP", 3],
+        ["BenchmarkService en segundo plano y persistencia", "MP", 4],
+        ["Pantalla de escalabilidad con gráficas", "JN", 2],
+        ["Pruebas de rendimiento", "FB", 1]
+      ],
+      "pruebas": ["CP-14-01", "CP-14-02"]
+    },
+    {
+      "id": "HU-15", "titulo": "Consultar el historial de ejecuciones y escenarios", "epica": "E5", "prioridad": "Should", "sp": 3, "sprint": "Sprint 2", "responsable": "JB",
+      "areas": ["backend", "frontend"],
+      "historia": "Como gerente, quiero consultar, filtrar y abrir ejecuciones anteriores con sus parámetros y el snapshot de la red, para trazar decisiones y repetir análisis.",
+      "criterios": [
+        "**Dado** el historial, **cuando** filtro por método, escenario o rango de fechas, **entonces** solo veo las ejecuciones que cumplen el filtro, paginadas de 20 en 20.",
+        "**Dado** una ejecución, **cuando** la abro, **entonces** veo su resultado y puedo reutilizar sus parámetros."
+      ],
+      "tareas": [
+        ["Endpoints de historial con filtros y paginación", "JB", 2],
+        ["Pantalla de historial y detalle", "JN", 3],
+        ["Pruebas de filtros", "FB", 1]
+      ],
+      "pruebas": ["CP-15-01"]
+    },
+    {
+      "id": "HU-16", "titulo": "Exportar reportes en PDF y Excel", "epica": "E5", "prioridad": "Should", "sp": 3, "sprint": "Sprint 2", "responsable": "FB",
+      "areas": ["backend", "frontend"],
+      "historia": "Como gerente, quiero descargar el reporte comparativo y los resultados en PDF y Excel, para compartirlos con la junta y anexarlos al informe técnico.",
+      "criterios": [
+        "**Dado** una comparación, **cuando** pulso 'Exportar PDF', **entonces** descargo un PDF con portada, resumen, gráficas y tabla de flujos.",
+        "**Dado** una comparación, **cuando** pulso 'Exportar Excel', **entonces** descargo un .xlsx con las hojas Resumen, Flujos, Sensibilidad y Convergencia."
+      ],
+      "tareas": [
+        ["ReporteService con ReportLab y openpyxl", "FB", 4],
+        ["Botones de exportación y descarga", "JN", 1],
+        ["Pruebas de los archivos generados", "FB", 1]
+      ],
+      "pruebas": ["CP-16-01", "CP-16-02"]
+    },
+    {
+      "id": "HU-17", "titulo": "Gestionar centros de acopio (nodos de paso)", "epica": "E1", "prioridad": "Could", "sp": 8, "sprint": "Sprint 2", "responsable": "JB",
+      "areas": ["optimizacion", "backend", "frontend"],
+      "historia": "Como analista logístico, quiero registrar centros de acopio intermedios con capacidad y costo de manejo, y rutas fuente→acopio→planta, para modelar la red como un problema de flujo de costo mínimo con transbordo, tal como permite la Fase 1.",
+      "criterios": [
+        "**Dado** al menos un acopio activo, **cuando** ejecuto el modelo exacto, **entonces** se usa el modelo de flujo de costo mínimo con conservación de flujo en cada acopio.",
+        "**Dado** un acopio sin rutas convenientes, **cuando** resuelvo, **entonces** Z* es igual al del modelo de transporte sin acopio.",
+        "**Dado** un acopio con capacidad c, **entonces** el flujo que pasa por él nunca supera c."
+      ],
+      "tareas": [
+        ["ModeloFlujoCostoMinimo (conservación y capacidad de acopios)", "JB", 4],
+        ["Extensión del cromosoma del AG por arcos", "MP", 3],
+        ["Pantalla de centros de acopio", "JN", 2],
+        ["Pruebas de conservación de flujo", "FB", 1]
+      ],
+      "pruebas": ["CP-17-01", "CP-17-02"]
+    }
+  ],
+  "tecnicos": [
+    {
+      "id": "T-01a", "titulo": "Monorepo, plantillas de PR e issues y tablero de GitHub Projects", "sprint": "Sprint 1", "responsable": "FB",
+      "areas": ["devops", "docs"],
+      "descripcion": "Estructura del monorepo (sección 9.3 del Documento Base), .gitignore, .env.example, docker-compose con PostgreSQL local, CONTRIBUTING con flujo de ramas, DoR y DoD, plantillas de PR e issues, ramas main/develop protegidas y tablero con el Product Backlog.",
+      "tareas": [
+        ["Monorepo, plantillas de PR e issues, tablero de GitHub Projects", "FB", 2],
+        ["Refinamiento del backlog, DoR/DoD y criterios de aceptación", "FB", 3]
+      ],
+      "terminado": "El monorepo está en develop, main y develop están protegidas y el tablero tiene las 17 HU y los ítems técnicos con sprint, prioridad, SP y responsable."
+    },
+    {
+      "id": "T-01b", "titulo": "Backend base: FastAPI, Supabase, SQLAlchemy, Alembic y migración V1", "sprint": "Sprint 1", "responsable": "JB",
+      "areas": ["backend", "bd"],
+      "descripcion": "FastAPI base con configuración (pydantic-settings), conexión a PostgreSQL local y a Supabase, engine y sesión de SQLAlchemy 2.0, Alembic y migración V1 (tipos ENUM, nodo, ruta, parametro_global, índices y parámetros semilla).",
+      "tareas": [
+        ["FastAPI base, configuración, conexión a Supabase, SQLAlchemy y Alembic", "JB", 4],
+        ["Migración V1: nodo, ruta y parametro_global", "JB", 2]
+      ],
+      "terminado": "alembic upgrade head funciona contra el PostgreSQL local y contra Supabase, y GET /api/v1/health responde 200."
+    },
+    {
+      "id": "T-01c", "titulo": "Frontend base: Vite, React, TypeScript, Tailwind, router y cliente API", "sprint": "Sprint 1", "responsable": "JN",
+      "areas": ["frontend"],
+      "descripcion": "Proyecto Vite + React + TypeScript + Tailwind en frontend/, layout responsive (barra inferior en móvil, menú lateral en escritorio), React Router y cliente Axios + TanStack Query apuntando a VITE_API_URL.",
+      "tareas": [
+        ["Vite + React + TypeScript + Tailwind, layout responsive, router y cliente API", "JN", 4]
+      ],
+      "terminado": "npm run dev muestra el layout con navegación a 360, 768 y 1280 px, y npm run build pasa."
+    },
+    {
+      "id": "T-01d", "titulo": "Integración continua con GitHub Actions", "sprint": "Sprint 1", "responsable": "JN",
+      "areas": ["devops"],
+      "descripcion": "Workflow .github/workflows/ci.yml en cada PR y push: backend (ruff, alembic upgrade head contra postgres:15, pytest con cobertura) y frontend (npm ci, lint, test, build).",
+      "tareas": [
+        ["CI con GitHub Actions (ruff, pytest, eslint, vitest, build)", "JN", 2]
+      ],
+      "terminado": "El CI corre en cada PR hacia develop y es requisito para hacer merge."
+    },
+    {
+      "id": "T-02", "titulo": "Despliegue: Dockerfile del backend, Render, Vercel, variables de entorno y CORS", "sprint": "Sprint 2", "responsable": "JN",
+      "areas": ["devops"],
+      "descripcion": "Dockerfile del backend y servicio api en docker-compose, despliegue del backend en Render y del frontend en Vercel, variables de entorno y CORS restringido al dominio del frontend.",
+      "tareas": [
+        ["Dockerfile del backend, despliegue en Render y Vercel, variables de entorno y CORS", "JN", 3]
+      ],
+      "terminado": "La aplicación funciona en la nube contra Supabase y localmente con docker compose up."
+    },
+    {
+      "id": "T-03", "titulo": "Informe técnico en formato IEEE", "sprint": "Sprint 2", "responsable": "FB",
+      "areas": ["docs"],
+      "descripcion": "Informe con definición del grupo y roles, formulación matemática, justificación del AG, arquitectura, resultados del análisis de sensibilidad y análisis comparativo con los datos de prueba regionales.",
+      "tareas": [
+        ["Redacción, integración y formato IEEE del informe", "FB", 10],
+        ["Sección de formulación matemática y sensibilidad", "JB", 3],
+        ["Sección de diseño y justificación del AG", "MP", 3],
+        ["Sección de arquitectura y diagramas", "JN", 2]
+      ],
+      "terminado": "Informe completo con resultados reales del sistema, revisado por los cuatro integrantes."
+    },
+    {
+      "id": "T-04", "titulo": "Pruebas E2E con Playwright y regresión", "sprint": "Sprint 2", "responsable": "FB",
+      "areas": ["frontend", "devops"],
+      "descripcion": "Pruebas E2E de los 5 flujos críticos: cargar caso base → optimizar → sensibilidad → comparar → exportar.",
+      "tareas": [
+        ["Pruebas E2E con Playwright de los flujos principales y regresión", "FB", 3]
+      ],
+      "terminado": "Los 5 flujos críticos pasan en verde."
+    },
+    {
+      "id": "T-05", "titulo": "Preparación de la sustentación práctica", "sprint": "Sprint 2", "responsable": "FB",
+      "areas": ["docs"],
+      "descripcion": "Guion de la demostración, escenarios de oferta/demanda en vivo, ensayo y plan de respaldo (demo local y video).",
+      "tareas": [
+        ["Guion, escenarios en vivo y ensayo", "FB", 2],
+        ["Ensayo", "JB", 2],
+        ["Ensayo", "MP", 2],
+        ["Ensayo", "JN", 2]
+      ],
+      "terminado": "Ensayo completo realizado y video de respaldo grabado antes del 12 de noviembre."
+    }
+  ]
+}

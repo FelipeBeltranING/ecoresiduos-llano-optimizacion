@@ -1,0 +1,49 @@
+name: Reporte de defecto
+description: Algo no funciona como se espera
+title: "[Bug] "
+labels: ["tipo: bug"]
+body:
+  - type: input
+    id: hu
+    attributes:
+      label: Historia o caso de prueba relacionado
+      placeholder: "HU-07 / CP-07-01"
+  - type: dropdown
+    id: severidad
+    attributes:
+      label: Severidad
+      description: Los defectos críticos bloquean el merge.
+      options: [Crítica, Alta, Media, Baja]
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: obtenido
+    attributes:
+      label: Resultado obtenido
+    validations:
+      required: true
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: Evidencia
+      description: Capturas, logs o respuesta de la API.
+  - type: input
+    id: entorno
+    attributes:
+      label: Entorno
+      placeholder: "local / nube · navegador · ancho de pantalla"

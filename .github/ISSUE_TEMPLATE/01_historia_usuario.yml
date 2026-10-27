@@ -1,0 +1,72 @@
+name: Historia de usuario
+description: Nueva historia para el Product Backlog
+title: "HU-XX · "
+labels: ["tipo: historia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Formato **Como / Quiero / Para** y criterios **Dado / Cuando / Entonces**.
+        Antes de pasar a *Ready* debe cumplir la Definition of Ready (ver `CONTRIBUTING.md`).
+  - type: textarea
+    id: historia
+    attributes:
+      label: Historia
+      placeholder: "Como <rol>, quiero <acción>, para <beneficio>."
+    validations:
+      required: true
+  - type: dropdown
+    id: epica
+    attributes:
+      label: Épica
+      options:
+        - E1 — Gestión dinámica de la red logística
+        - E2 — Optimización exacta de la red
+        - E3 — Optimización metaheurística con Algoritmo Genético
+        - E4 — Análisis de sensibilidad
+        - E5 — Comparación, historial y reportes
+    validations:
+      required: true
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: Prioridad (MoSCoW)
+      options: [Must, Should, Could]
+    validations:
+      required: true
+  - type: dropdown
+    id: sp
+    attributes:
+      label: Story points
+      options: ["1", "2", "3", "5", "8", "13"]
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      placeholder: |
+        **CA1. Dado** …, **cuando** …, **entonces** …
+        **CA2. Dado** …, **cuando** …, **entonces** …
+    validations:
+      required: true
+  - type: textarea
+    id: tareas
+    attributes:
+      label: Tareas
+      placeholder: |
+        - [ ] Tarea — Responsable — horas
+  - type: checkboxes
+    id: dor
+    attributes:
+      label: Definition of Ready
+      options:
+        - label: Asociada a una épica y en formato Como / Quiero / Para
+        - label: Criterios de aceptación verificables y con datos concretos
+        - label: Estimada (≤ 13 SP)
+        - label: Dependencias identificadas
+        - label: Diagramas de clases y de secuencia esbozados
+        - label: Mockup aprobado por el PO (si tiene interfaz)
+        - label: Contrato de API definido
+        - label: Datos y casos de prueba identificados
+        - label: Responsable asignado y cabe en el sprint

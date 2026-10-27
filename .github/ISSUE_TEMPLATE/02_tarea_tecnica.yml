@@ -1,0 +1,23 @@
+name: Tarea técnica
+description: Ítem técnico (configuración, CI/CD, despliegue, documentación, informe)
+title: "T-XX · "
+labels: ["tipo: tarea"]
+body:
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción
+      placeholder: Qué hay que hacer y por qué.
+    validations:
+      required: true
+  - type: textarea
+    id: tareas
+    attributes:
+      label: Subtareas
+      placeholder: |
+        - [ ] Subtarea — Responsable — horas
+  - type: textarea
+    id: criterio
+    attributes:
+      label: Criterio de terminado
+      placeholder: Cómo sabemos que quedó listo.
