@@ -105,7 +105,10 @@ class GH:
             self._contador += 1
             return ""
         try:
-            resultado = subprocess.run(comando, check=True, capture_output=True, text=True)
+            # gh responde en UTF-8; sin encoding explícito, Windows usa cp1252 y
+            # "Épica" o "·" llegan corruptos (y el script no reconoce lo que ya creó).
+            resultado = subprocess.run(comando, check=True, capture_output=True,
+                                       encoding="utf-8", errors="replace")
         except FileNotFoundError:
             sys.exit("No se encontró 'gh'. Instale GitHub CLI: https://cli.github.com")
         except subprocess.CalledProcessError as error:
