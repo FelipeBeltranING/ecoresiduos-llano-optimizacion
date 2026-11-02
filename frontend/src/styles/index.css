@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  /* Paleta Orion · Fundamentos */
+  --color-primary: #1f7a4d;
+  --color-primary-dark: #12392a;
+  --color-primary-soft: #e8f3ec;
+  --color-primary-light: #8fd6ae;
+  --color-accent: #b7791f;
+  --color-accent-soft: #f6ebd5;
+  --color-danger: #c2410c;
+  --color-danger-soft: #fbe9df;
+  --color-text: #17201b;
+  --color-muted: #5b6b62;
+  --color-border: #dce3de;
+  --color-bg: #f4f7f5;
+  --color-surface: #ffffff;
+
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  --shadow-card: 0 1px 2px rgb(18 57 42 / 0.04);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-dark);
+  }
+}
+
+@layer components {
+  /* Escala tipográfica · Fundamentos */
+  .type-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .type-title-44 {
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 48px;
+    letter-spacing: -0.02em;
+  }
+
+  .type-title-22 {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 28px;
+    letter-spacing: -0.01em;
+  }
+
+  .type-title-18 {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+  }
+
+  .type-title-15 {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+
+  .type-cuerpo {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .type-cuerpo-strong {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  .type-label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+
+  .type-cifra-28 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 32px;
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .type-cifra-44 {
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 48px;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .type-cifra-72 {
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 76px;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Tablas de datos */
+  .tabla {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .tabla thead th {
+    background-color: var(--color-primary-dark);
+    color: var(--color-surface);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    padding: 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .tabla thead th:first-child {
+    border-bottom-left-radius: var(--radius-control);
+    border-top-left-radius: var(--radius-control);
+  }
+
+  .tabla thead th:last-child {
+    border-bottom-right-radius: var(--radius-control);
+    border-top-right-radius: var(--radius-control);
+  }
+
+  .tabla tbody td {
+    border-bottom: 1px solid var(--color-border);
+    padding: 12px;
+    vertical-align: middle;
+  }
+
+  .tabla tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .tabla--compacta tbody td {
+    padding-bottom: 10px;
+    padding-top: 10px;
+  }
+
+  .scroll-fino {
+    scrollbar-color: var(--color-border) transparent;
+    scrollbar-width: thin;
+  }
+}
