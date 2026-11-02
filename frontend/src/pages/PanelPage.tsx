@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { API_URL } from "@/api";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 const indicators = [
@@ -135,9 +136,10 @@ export function PanelPage() {
               </span>
             </li>
           </ul>
-          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-            Conexión configurada con <code className="font-mono text-[11px]">VITE_API_URL</code>.
-          </p>
+          <div className="mt-4 rounded-xl bg-slate-50 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">API</p>
+            <code className="mt-1 block break-all font-mono text-[11px] text-slate-700">{API_URL}</code>
+          </div>
         </aside>
       </div>
     </section>
