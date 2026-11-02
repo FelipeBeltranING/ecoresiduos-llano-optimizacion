@@ -39,8 +39,8 @@ export function ModulePlaceholder({
             ))}
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            El layout, la navegación y el cliente de API ya están listos. Este módulo se conectará al
-            backend en las historias indicadas.
+            El layout, la navegación y el cliente de API ya están listos. Este módulo se conectará
+            al backend en las historias indicadas.
           </p>
         </div>
         <Link

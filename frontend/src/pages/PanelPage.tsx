@@ -56,7 +56,10 @@ export function PanelPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {indicators.map(({ label, hint, icon: Icon }) => (
-          <article key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-panel">
+          <article
+            key={label}
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-panel"
+          >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium text-slate-600">{label}</p>
               <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-slate-50 text-slate-500">
@@ -111,34 +114,44 @@ export function PanelPage() {
               <CircleCheck className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden="true" />
               <span>
                 <span className="font-medium text-slate-900">Frontend base</span>
-                <span className="block text-xs text-slate-500">Layout, router y cliente API (T-01c)</span>
+                <span className="block text-xs text-slate-500">
+                  Layout, router y cliente API (T-01c)
+                </span>
               </span>
             </li>
             <li className="flex gap-3">
               <CircleCheck className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden="true" />
               <span>
                 <span className="font-medium text-slate-900">Integración continua</span>
-                <span className="block text-xs text-slate-500">GitHub Actions para lint, test y build (T-01d)</span>
+                <span className="block text-xs text-slate-500">
+                  GitHub Actions para lint, test y build (T-01d)
+                </span>
               </span>
             </li>
             <li className="flex gap-3">
               <CircleDashed className="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden="true" />
               <span>
                 <span className="font-medium text-slate-900">API y base de datos</span>
-                <span className="block text-xs text-slate-500">FastAPI, Supabase y migración V1 (T-01b)</span>
+                <span className="block text-xs text-slate-500">
+                  FastAPI, Supabase y migración V1 (T-01b)
+                </span>
               </span>
             </li>
             <li className="flex gap-3">
               <CircleDashed className="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden="true" />
               <span>
                 <span className="font-medium text-slate-900">Motores de optimización</span>
-                <span className="block text-xs text-slate-500">Modelo exacto y genético (HU-07 · HU-09)</span>
+                <span className="block text-xs text-slate-500">
+                  Modelo exacto y genético (HU-07 · HU-09)
+                </span>
               </span>
             </li>
           </ul>
           <div className="mt-4 rounded-xl bg-slate-50 p-3">
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">API</p>
-            <code className="mt-1 block break-all font-mono text-[11px] text-slate-700">{API_URL}</code>
+            <code className="mt-1 block break-all font-mono text-[11px] text-slate-700">
+              {API_URL}
+            </code>
           </div>
         </aside>
       </div>

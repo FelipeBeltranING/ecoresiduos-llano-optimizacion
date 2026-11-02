@@ -9,6 +9,8 @@ describe("normalizeBaseUrl", () => {
   });
 
   it("trims the value and removes trailing slashes", () => {
-    expect(normalizeBaseUrl(" http://localhost:8000/api/v1/ ")).toBe("http://localhost:8000/api/v1");
+    expect(normalizeBaseUrl(" http://localhost:8000/api/v1/ ")).toBe(
+      "http://localhost:8000/api/v1",
+    );
   });
 });

@@ -41,6 +41,8 @@ describe("app shell", () => {
   it("renders the not-found view for unknown routes", () => {
     renderApp("/ruta-inexistente");
 
-    expect(screen.getByRole("heading", { level: 1, name: "Página no encontrada" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Página no encontrada" }),
+    ).toBeInTheDocument();
   });
 });

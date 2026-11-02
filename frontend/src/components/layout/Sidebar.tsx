@@ -29,12 +29,18 @@ export function Sidebar() {
             <ul className="space-y-1">
               {group.items.map((item) => (
                 <li key={item.to}>
-                  <NavLink to={item.to} end={item.end} className={({ isActive }) => linkClasses(isActive)}>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) => linkClasses(isActive)}
+                  >
                     {({ isActive }) => (
                       <>
                         <item.icon
                           className={
-                            isActive ? "size-4 shrink-0 text-brand-700" : "size-4 shrink-0 text-slate-400"
+                            isActive
+                              ? "size-4 shrink-0 text-brand-700"
+                              : "size-4 shrink-0 text-slate-400"
                           }
                           aria-hidden="true"
                         />
