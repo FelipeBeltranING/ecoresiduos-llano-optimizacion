@@ -1,12 +1,12 @@
 import {
+  Building2,
+  ChartNoAxesColumn,
   FlaskConical,
-  Gauge,
-  GitCompareArrows,
   History,
-  LayoutDashboard,
-  Network,
+  LayoutGrid,
   Route as RouteIcon,
   Sprout,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 
@@ -17,98 +17,79 @@ export interface NavItem {
   description: string;
   icon: LucideIcon;
   end?: boolean;
-  primary?: boolean;
 }
 
-export interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
-
-export const navigation: NavGroup[] = [
+/** Estaciones del topbar de escritorio, en el orden del diseño Orion. */
+export const allNavItems: NavItem[] = [
   {
-    label: "Operación",
-    items: [
-      {
-        to: "/",
-        label: "Panel",
-        shortLabel: "Panel",
-        description: "Resumen de la red y del sprint",
-        icon: LayoutDashboard,
-        end: true,
-        primary: true,
-      },
-      {
-        to: "/red",
-        label: "Red logística",
-        shortLabel: "Red",
-        description: "Empresas, plantas y centros de acopio",
-        icon: Network,
-        primary: true,
-      },
-      {
-        to: "/rutas",
-        label: "Rutas y costos",
-        shortLabel: "Rutas",
-        description: "Distancias y matriz de costos",
-        icon: RouteIcon,
-        primary: true,
-      },
-    ],
+    to: "/",
+    label: "Panel",
+    shortLabel: "Panel",
+    description: "Resumen de la red y del sprint",
+    icon: LayoutGrid,
+    end: true,
   },
   {
-    label: "Optimización",
-    items: [
-      {
-        to: "/exacto",
-        label: "Modelo exacto",
-        shortLabel: "Exacto",
-        description: "Solución óptima con PuLP y CBC",
-        icon: Gauge,
-        primary: true,
-      },
-      {
-        to: "/ag",
-        label: "Algoritmo genético",
-        shortLabel: "AG",
-        description: "Configuración, ejecución y convergencia",
-        icon: Sprout,
-      },
-      {
-        to: "/sensibilidad",
-        label: "Sensibilidad",
-        shortLabel: "Sensib.",
-        description: "Escenarios, precios sombra y rangos",
-        icon: FlaskConical,
-      },
-    ],
+    to: "/red",
+    label: "Red",
+    shortLabel: "Red",
+    description: "Empresas, plantas y centros de acopio",
+    icon: Building2,
   },
   {
-    label: "Análisis",
-    items: [
-      {
-        to: "/comparativo",
-        label: "Comparativo",
-        shortLabel: "Comparar",
-        description: "Exacto frente a AG, brecha y escalabilidad",
-        icon: GitCompareArrows,
-      },
-      {
-        to: "/historial",
-        label: "Historial",
-        shortLabel: "Historial",
-        description: "Ejecuciones, escenarios y reportes",
-        icon: History,
-      },
-    ],
+    to: "/rutas",
+    label: "Rutas",
+    shortLabel: "Rutas",
+    description: "Distancias y matriz de costos",
+    icon: RouteIcon,
+  },
+  {
+    to: "/exacto",
+    label: "Exacto",
+    shortLabel: "Exacto",
+    description: "Solución óptima con PuLP y CBC",
+    icon: Target,
+  },
+  {
+    to: "/ag",
+    label: "Genético",
+    shortLabel: "Genético",
+    description: "Configuración, ejecución y convergencia",
+    icon: Sprout,
+  },
+  {
+    to: "/sensibilidad",
+    label: "Sensibilidad",
+    shortLabel: "Sensib.",
+    description: "Escenarios, precios sombra y rangos",
+    icon: FlaskConical,
+  },
+  {
+    to: "/comparativo",
+    label: "Comparativo",
+    shortLabel: "Comparar",
+    description: "Exacto frente a AG, brecha y escalabilidad",
+    icon: ChartNoAxesColumn,
+  },
+  {
+    to: "/historial",
+    label: "Historial",
+    shortLabel: "Historial",
+    description: "Ejecuciones, escenarios y reportes",
+    icon: History,
   },
 ];
 
-export const allNavItems: NavItem[] = navigation.flatMap((group) => group.items);
+/** Las cinco estaciones de la barra inferior móvil (la última abre el resto). */
+export const mobilePrimaryPaths = ["/", "/red", "/exacto", "/comparativo"] as const;
 
-export const primaryNavItems: NavItem[] = allNavItems.filter((item) => item.primary);
+export const mobilePrimaryNavItems: NavItem[] = mobilePrimaryPaths
+  .map((path) => allNavItems.find((item) => item.to === path))
+  .filter((item): item is NavItem => Boolean(item));
 
-export const secondaryNavItems: NavItem[] = allNavItems.filter((item) => !item.primary);
+export const mobileMoreNavItems: NavItem[] = allNavItems.filter(
+  (item) => !(mobilePrimaryPaths as readonly string[]).includes(item.to),
+);
 
 /** Finds the deepest navigation entry that matches the current path. */
 export function findNavItem(pathname: string): NavItem | undefined {

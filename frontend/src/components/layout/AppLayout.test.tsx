@@ -19,11 +19,11 @@ describe("app shell", () => {
     expect(screen.getByRole("navigation", { name: "Navegación rápida" })).toBeInTheDocument();
   });
 
-  it("navigates to another module from the sidebar", async () => {
+  it("navigates to another module from the topbar", async () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByRole("link", { name: "Rutas y costos" }));
+    await user.click(screen.getByRole("link", { name: "Rutas" }));
 
     expect(screen.getByRole("heading", { level: 1, name: "Rutas y costos" })).toBeInTheDocument();
   });
@@ -35,7 +35,7 @@ describe("app shell", () => {
     await user.click(screen.getByRole("button", { name: "Más" }));
 
     const dialog = screen.getByRole("dialog", { name: "Más módulos" });
-    expect(within(dialog).getByRole("link", { name: "Algoritmo genético" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("link", { name: /Genético/ })).toBeInTheDocument();
   });
 
   it("renders the not-found view for unknown routes", () => {

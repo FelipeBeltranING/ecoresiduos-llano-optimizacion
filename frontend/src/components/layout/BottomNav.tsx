@@ -1,15 +1,8 @@
-import { Menu, X } from "lucide-react";
+import { Ellipsis, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
-import { primaryNavItems, secondaryNavItems } from "@/navigation";
-
-function itemClasses(isActive: boolean): string {
-  return [
-    "flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
-    isActive ? "bg-brand-50 text-brand-800" : "bg-slate-50 text-slate-700 hover:bg-slate-100",
-  ].join(" ");
-}
+import { mobileMoreNavItems, mobilePrimaryNavItems } from "@/navigation";
 
 export function BottomNav() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -33,37 +26,50 @@ export function BottomNav() {
   return (
     <>
       {isSheetOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 xl:hidden">
           <button
             type="button"
             aria-label="Cerrar menú"
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-primary-dark/40 backdrop-blur-[2px]"
             onClick={() => setIsSheetOpen(false)}
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Más módulos"
-            className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-slate-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl"
+            className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-border bg-surface p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl"
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-300" />
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-sm font-semibold text-slate-900">Más módulos</p>
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+            <div className="mb-3 flex items-center justify-between px-1">
+              <p className="type-title-15 text-text">Más módulos</p>
               <button
                 type="button"
                 onClick={() => setIsSheetOpen(false)}
                 aria-label="Cerrar menú"
-                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+                className="rounded-control p-1 text-muted hover:bg-bg"
               >
                 <X className="size-5" aria-hidden="true" />
               </button>
             </div>
-            <ul className="grid grid-cols-2 gap-2">
-              {secondaryNavItems.map((item) => (
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {mobileMoreNavItems.map((item) => (
                 <li key={item.to}>
-                  <NavLink to={item.to} className={({ isActive }) => itemClasses(isActive)}>
-                    <item.icon className="size-5 shrink-0" aria-hidden="true" />
-                    <span>{item.label}</span>
+                  <NavLink
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        "flex items-center gap-3 rounded-control border px-3 py-3",
+                        isActive
+                          ? "border-primary-light bg-primary-soft text-primary-dark"
+                          : "border-border text-text hover:bg-bg",
+                      ].join(" ")
+                    }
+                  >
+                    <item.icon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">{item.label}</span>
+                      <span className="block text-xs text-muted">{item.description}</span>
+                    </span>
                   </NavLink>
                 </li>
               ))}
@@ -74,23 +80,34 @@ export function BottomNav() {
 
       <nav
         aria-label="Navegación rápida"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] xl:hidden"
       >
-        <ul className="mx-auto grid max-w-md grid-cols-5">
-          {primaryNavItems.map((item) => (
+        <ul className="mx-auto grid max-w-lg grid-cols-5">
+          {mobilePrimaryNavItems.map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
                   [
-                    "flex flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors",
-                    isActive ? "text-brand-700" : "text-slate-500 hover:text-slate-800",
+                    "flex flex-col items-center gap-1 px-1 pb-2 pt-2.5 text-[11px] font-medium leading-4",
+                    isActive ? "text-primary-dark" : "text-muted",
                   ].join(" ")
                 }
               >
-                <item.icon className="size-5" aria-hidden="true" />
-                <span>{item.shortLabel}</span>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={[
+                        "grid size-9 place-items-center rounded-lg transition-colors",
+                        isActive ? "bg-primary-soft text-primary" : "text-muted",
+                      ].join(" ")}
+                    >
+                      <item.icon className="size-5" aria-hidden="true" />
+                    </span>
+                    {item.shortLabel}
+                  </>
+                )}
               </NavLink>
             </li>
           ))}
@@ -100,10 +117,12 @@ export function BottomNav() {
               onClick={() => setIsSheetOpen(true)}
               aria-expanded={isSheetOpen}
               aria-haspopup="dialog"
-              className="flex w-full flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium text-slate-500 transition-colors hover:text-slate-800"
+              className="flex w-full flex-col items-center gap-1 px-1 pb-2 pt-2.5 text-[11px] font-medium leading-4 text-muted"
             >
-              <Menu className="size-5" aria-hidden="true" />
-              <span>Más</span>
+              <span className="grid size-9 place-items-center rounded-lg">
+                <Ellipsis className="size-5" aria-hidden="true" />
+              </span>
+              Más
             </button>
           </li>
         </ul>
