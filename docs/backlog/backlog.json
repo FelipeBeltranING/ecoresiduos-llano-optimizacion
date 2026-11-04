@@ -1,10 +1,10 @@
 {
   "proyecto": "Optimización de la Red Logística — EcoResiduos del Llano (Grupo Orion)",
   "equipo": {
-    "FB": { "nombre": "David Felipe Beltrán", "rol": "Líder de Proyecto / Analista de Negocio (PO y SM)", "github": "" },
-    "JB": { "nombre": "Julián Báez", "rol": "Ingeniero de Modelado y Optimización", "github": "" },
-    "MP": { "nombre": "Martín Pineda", "rol": "Desarrollador de Metaheurísticas", "github": "" },
-    "JN": { "nombre": "Juan David Navarro", "rol": "Desarrollador de Software e Interfaz", "github": "" }
+    "FB": { "nombre": "David Felipe Beltrán", "rol": "Líder de Proyecto / Analista de Negocio (PO y SM)", "github": "FelipeBeltranING" },
+    "JB": { "nombre": "Julián Báez", "rol": "Ingeniero de Modelado y Optimización", "github": "P4trick-B4tem4n" },
+    "MP": { "nombre": "Martín Pineda", "rol": "Desarrollador de Metaheurísticas", "github": "mpinedaj" },
+    "JN": { "nombre": "Juan David Navarro", "rol": "Desarrollador de Software e Interfaz", "github": "Navarro0k" }
   },
   "sprints": [
     { "nombre": "Sprint 1", "inicio": "2026-10-26", "fin": "2026-11-03",
