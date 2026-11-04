@@ -63,3 +63,50 @@ class InicializadorAG:
             poblacion.append(self.generar_individuo_dirichlet())
             
         return poblacion
+    
+class EvaluadorAG:
+    def __init__(self, oferta: np.ndarray, capacidad: np.ndarray, matriz_costos: np.ndarray, lambda_pen: float = 1e6):
+        self.a = oferta        # (m,)
+        self.b = capacidad     # (n,)
+        self.C = matriz_costos # (m, n)
+        self.lambda_pen = lambda_pen # 1M
+
+    def reparar_cromosoma(self, flujos: np.ndarray) -> np.ndarray:
+        """Reescala cada fila para que la suma de envíos coincida con la oferta de la empresa[cite: 1]."""
+        flujos_reparados = np.copy(flujos)
+        m, n = flujos_reparados.shape
+        
+        for i in range(m):
+            suma_fila = np.sum(flujos_reparados[i, :])
+            if suma_fila > 0:
+                # Se multiplica cada elemento por (oferta esperada / suma actual)
+                flujos_reparados[i, :] = flujos_reparados[i, :] * (self.a[i] / suma_fila)
+            else:
+                # Si una fila quedó en 0 absoluto, repartimos la oferta equitativamente
+                flujos_reparados[i, :] = self.a[i] / n
+                
+        return flujos_reparados
+
+    def evaluar(self, individuo) -> None:
+        """Calcula el costo Z, penaliza las violaciones y asigna el fitness"""
+        # Reparamos la solución antes de evaluarla
+        individuo.cromosoma = self.reparar_cromosoma(individuo.cromosoma)
+        
+        # 1. Costo total 
+        individuo.costo_total = np.sum(individuo.cromosoma * self.C)
+        
+        # 2. Cálculo de violaciones sumando por filas (axis=1) y columnas (axis=0)
+        oferta_asignada = np.sum(individuo.cromosoma, axis=1)
+        capacidad_usada = np.sum(individuo.cromosoma, axis=0)
+        
+        # Penalización de oferta
+        violacion_oferta = np.sum(np.abs(oferta_asignada - self.a))
+        
+        # Penalización de capacidad
+        violacion_capacidad = np.sum(np.maximum(0, capacidad_usada - self.b))
+        
+        individuo.violaciones = violacion_oferta + violacion_capacidad
+        
+        # 3. Fitness 
+        denominador = individuo.costo_total + (self.lambda_pen * individuo.violaciones)
+        individuo.fitness = 1.0 / (denominador + 1e-10)
