@@ -29,7 +29,7 @@ alembic upgrade head
 uvicorn app.main:app --reload   # http://localhost:8000/docs
 ```
 
-## Base de datos (Supabase, PostgreSQL 15)
+## Base de datos (Supabase, PostgreSQL 17)
 
 - Driver: SQLAlchemy 2.0 + psycopg 3 (síncrono). `pydantic-settings` lee `backend/.env`.
 - Conexión por el **Session pooler, puerto 5432**. No usar el Transaction pooler (6543):
@@ -49,6 +49,6 @@ pytest --cov=app
 - `tests/unit/`: sin base de datos.
 - `tests/integration/`: usan `TEST_DATABASE_URL`, aplican las migraciones y se saltan si la
   variable no está definida. **Nunca** se corren contra Supabase (el `conftest.py` lo impide).
-- En CI, `TEST_DATABASE_URL` apunta al servicio `postgres:15` de GitHub Actions.
+- En CI, `TEST_DATABASE_URL` apunta al servicio `postgres:17` de GitHub Actions.
 - Ruff no revisa `app/optimizacion/exacto/`, `genetico/` ni `sensibilidad/`: el equipo las
   ajusta al conectar sus motores.

@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
 ![React](https://img.shields.io/badge/React-18-61DAFB)
-![PostgreSQL](https://img.shields.io/badge/Supabase-PostgreSQL%2015-3ECF8E)
+![PostgreSQL](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-green)
 ![Estado](https://img.shields.io/badge/Estado-En%20desarrollo-yellow)
 
@@ -187,7 +187,7 @@ $$\text{Gap}(\%) = \frac{Z_{AG} - Z^{*}}{Z^{*}} \times 100$$
 | **Frontend** | React 18 + TypeScript, Vite, Tailwind CSS, React Router, TanStack Query + Axios, React Hook Form + Zod, React Leaflet (mapa), Recharts (gráficas) |
 | **Backend** | Python 3.12, FastAPI + Uvicorn, Pydantic v2 |
 | **Optimización** | PuLP + CBC (modelo exacto, duales y holguras), NumPy (AG), NetworkX (validación del grafo) |
-| **Datos** | Supabase PostgreSQL 15, SQLAlchemy 2.0 (ORM), Alembic (migraciones), psycopg 3 |
+| **Datos** | Supabase PostgreSQL 17, SQLAlchemy 2.0 (ORM), Alembic (migraciones), psycopg 3 |
 | **Reportes** | Pandas + openpyxl (Excel), ReportLab + Matplotlib (PDF) |
 | **Calidad** | pytest, pytest-cov, httpx, Vitest + Testing Library, Playwright, Ruff, ESLint, Prettier |
 | **DevOps** | Docker + Docker Compose, GitHub Actions, Vercel (frontend), Render (backend) |
@@ -245,7 +245,7 @@ ecoresiduos-llano-optimizacion/
 
 ## 11. Instalación y ejecución
 
-**Requisitos:** Git, Python 3.12, Node.js 20 y un proyecto de Supabase (PostgreSQL 15).
+**Requisitos:** Git, Python 3.12, Node.js 20 y un proyecto de Supabase (PostgreSQL 17).
 
 **Backend** (API en http://localhost:8000 · Swagger en http://localhost:8000/docs)
 
