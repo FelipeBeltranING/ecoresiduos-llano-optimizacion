@@ -1,6 +1,7 @@
 # AlgoritmoGenetico
 
 import numpy as np
+import copy
 
 class Individuo:
     def __init__(self, flujos: np.ndarray):
@@ -138,3 +139,66 @@ class OperadoresGeneticos:
             fraccion = self.rng.random() * flujo_actual
             individuo.cromosoma[i, j] -= fraccion
             individuo.cromosoma[i, j_prima] += fraccion
+            
+class MotorAG:
+    def __init__(self, inicializador, evaluador, operadores):
+        self.inicializador = inicializador
+        self.evaluador = evaluador
+        self.operadores = operadores
+
+    def ejecutar(self, tam_poblacion: int = 100, generaciones: int = 300, 
+                 tasa_cruce: float = 0.85, tasa_mutacion: float = 0.10, 
+                 tipo_seleccion: str = 'torneo'):
+        
+        poblacion = self.inicializador.crear_poblacion_inicial(tam_poblacion)
+        for ind in poblacion:
+            self.evaluador.evaluar(ind)
+            
+        mejor_historico = None
+        generaciones_sin_mejora = 0
+        
+        for gen in range(generaciones):
+            # Elitismo
+            poblacion.sort(key=lambda ind: ind.fitness, reverse=True)
+            nueva_poblacion = [
+                type(poblacion[0])(np.copy(poblacion[0].cromosoma)), 
+                type(poblacion[1])(np.copy(poblacion[1].cromosoma))
+            ]
+            
+            if mejor_historico is None or poblacion[0].costo_total < mejor_historico.costo_total:
+                mejor_historico = copy.deepcopy(poblacion[0])
+                generaciones_sin_mejora = 0
+            else:
+                generaciones_sin_mejora += 1
+                
+            # Criterio de parada tras 50 iteraciones sin mejora
+            if generaciones_sin_mejora >= 50:
+                break
+                
+            while len(nueva_poblacion) < tam_poblacion:
+                # 1. Selección
+                if tipo_seleccion == 'torneo':
+                    padre1 = self.operadores.seleccion_torneo(poblacion)
+                    padre2 = self.operadores.seleccion_torneo(poblacion)
+                else:
+                    padre1 = self.operadores.seleccion_ruleta(poblacion)
+                    padre2 = self.operadores.seleccion_ruleta(poblacion)
+                    
+                if self.operadores.rng.random() < tasa_cruce:
+                    hijo1, hijo2 = self.operadores.cruce_un_punto(padre1, padre2)
+                else:
+                    hijo1 = type(padre1)(np.copy(padre1.cromosoma))
+                    hijo2 = type(padre2)(np.copy(padre2.cromosoma))
+                    
+                if self.operadores.rng.random() < tasa_mutacion:
+                    self.operadores.mutar_transferencia(hijo1)
+                if self.operadores.rng.random() < tasa_mutacion:
+                    self.operadores.mutar_transferencia(hijo2)
+                    
+                self.evaluador.evaluar(hijo1)
+                self.evaluador.evaluar(hijo2)
+                nueva_poblacion.extend([hijo1, hijo2])
+                
+            poblacion = nueva_poblacion[:tam_poblacion]
+            
+        return mejor_historico
