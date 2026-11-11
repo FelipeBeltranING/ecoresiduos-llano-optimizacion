@@ -49,6 +49,7 @@ known-third-party = ["alembic"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
     "integracion: pruebas que necesitan TEST_DATABASE_URL",
 ]
