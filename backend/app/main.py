@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.routers import datos, health
+from app.api.v1.routers import datos, ejecuciones, health, optimizacion, red
 from app.core.config import settings
 
 PREFIJO_API = "/api/v1"
@@ -21,3 +21,6 @@ app.add_middleware(
 # Routers de la versión 1
 app.include_router(health.router, prefix=PREFIJO_API)
 app.include_router(datos.router, prefix=PREFIJO_API)
+app.include_router(red.router, prefix=PREFIJO_API)
+app.include_router(optimizacion.router, prefix=PREFIJO_API)
+app.include_router(ejecuciones.router, prefix=PREFIJO_API)
