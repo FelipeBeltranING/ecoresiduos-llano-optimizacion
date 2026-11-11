@@ -1,236 +1,287 @@
-import { useState } from "react";
+import { Save, Wand2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { apiClient } from "@/api/client";
+import {
+  useActualizarParametro,
+  useActualizarRutas,
+  useMatriz,
+  useNodos,
+  useParametros,
+} from "@/api/hooks";
+import type { Parametro, Ruta, RutaCambio } from "@/api/tipos";
 import { Boton } from "@/components/ui/Boton";
-import { Campo } from "@/components/ui/Campo";
+import { Cargando, ErrorApi } from "@/components/ui/Estado";
+import { Etiqueta } from "@/components/ui/Etiqueta";
 import { PageBody, PageHero } from "@/components/ui/PageHero";
 import { Segmentado } from "@/components/ui/Segmentado";
 import { Tarjeta } from "@/components/ui/Tarjeta";
-import { costos, distancia, empresas, flujoDe, plantas } from "@/data/red";
-import { formatNumber } from "@/lib/format";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { activos } from "@/lib/red";
 
-type Modo = "costo" | "distancia" | "flujo";
+type Vista = "costo" | "distancia";
+const clave = (r: { origen: string; destino: string }) => `${r.origen}->${r.destino}`;
 
-const modos = [
-  { label: "Costo unitario (COP/t)", value: "costo" },
-  { label: "Distancia (km)", value: "distancia" },
-  { label: "Flujo óptimo (t)", value: "flujo" },
-];
-
-interface Celda {
-  empresa: string;
-  planta: (typeof plantas)[number]["codigo"];
+function FilaParametro({ parametro }: { parametro: Parametro }) {
+  const actualizar = useActualizarParametro();
+  const [valor, setValor] = useState(String(parametro.valor));
+  const guardar = () => {
+    const nuevo = Number(valor.replace(",", "."));
+    if (Number.isFinite(nuevo) && nuevo !== parametro.valor) {
+      actualizar.mutate({ clave: parametro.clave, valor: nuevo });
+    }
+  };
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={`param-${parametro.clave}`} className="type-label text-text">
+        {parametro.descripcion ?? parametro.clave}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={`param-${parametro.clave}`}
+          className="h-10 w-full rounded-control border border-border bg-surface px-3 text-sm tabular-nums focus:border-primary"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          onBlur={guardar}
+          onKeyDown={(e) => e.key === "Enter" && guardar()}
+          inputMode="decimal"
+        />
+        <span className="shrink-0 text-xs text-muted">{parametro.unidad}</span>
+      </div>
+      {actualizar.isError ? <ErrorApi error={actualizar.error} /> : null}
+    </div>
+  );
 }
 
-const celdaInicial: Celda = { empresa: "E05", planta: "P02" };
-
 export function RutasPage() {
-  const [modo, setModo] = useState<Modo>("costo");
-  const [seleccion, setSeleccion] = useState<Celda>(celdaInicial);
+  const matriz = useMatriz();
+  const nodos = useNodos();
+  const parametros = useParametros();
+  const guardarRutas = useActualizarRutas();
+  const [vista, setVista] = useState<Vista>("costo");
+  const [cambios, setCambios] = useState<Record<string, RutaCambio>>({});
+  const [generando, setGenerando] = useState(false);
 
-  const plantaSeleccionada = plantas.find((planta) => planta.codigo === seleccion.planta);
-  const costoSeleccionado = costos[seleccion.empresa][seleccion.planta];
-  const distanciaSeleccionada = plantaSeleccionada
-    ? distancia(costoSeleccionado, plantaSeleccionada.operacion)
-    : 0;
+  const porClave = useMemo(
+    () => new Map((matriz.data?.rutas ?? []).map((r) => [clave(r), r])),
+    [matriz.data],
+  );
+  const nombres = useMemo(
+    () => new Map(activos(nodos.data).map((n) => [n.codigo, n.nombre])),
+    [nodos.data],
+  );
+  const origenes = matriz.data?.origenes ?? [];
+  const destinos = matriz.data?.destinos ?? [];
+  const pendientes = Object.values(cambios);
+  const fuentes = new Set((matriz.data?.rutas ?? []).map((r) => r.fuente_distancia ?? "—"));
+
+  const editar = (ruta: Ruta, parcial: Partial<RutaCambio>) =>
+    setCambios((c) => ({
+      ...c,
+      [clave(ruta)]: {
+        ...(c[clave(ruta)] ?? { origen: ruta.origen, destino: ruta.destino }),
+        ...parcial,
+      },
+    }));
+
+  const generarFaltantes = async () => {
+    setGenerando(true);
+    try {
+      await apiClient.post("/rutas/generar-faltantes");
+      await matriz.refetch();
+    } finally {
+      setGenerando(false);
+    }
+  };
 
   return (
     <>
       <PageHero
-        eyebrow="Red logística · HU-03"
+        eyebrow="Red logística · HU-03 · HU-04"
         title="Rutas y costos"
-        description="Cada celda es una ruta de una empresa a una planta. Edita un valor y el costo se recalcula"
+        description="c_ij = k · d_ij + o_j. Edite distancias, el costo por t·km de una ruta o ciérrela; los cambios se guardan por lote"
         kpis={[
-          { valor: "40", etiqueta: "Rutas habilitadas" },
-          { valor: "350", etiqueta: "COP por t·km" },
-          { valor: "11", etiqueta: "Rutas en el óptimo" },
+          { valor: String(matriz.data?.rutas.length ?? "—"), etiqueta: "Rutas" },
+          {
+            valor: String(matriz.data?.rutas.filter((r) => !r.habilitada).length ?? "—"),
+            etiqueta: "Cerradas",
+          },
+          { valor: [...fuentes].join(" · ") || "—", etiqueta: "Origen de la distancia" },
         ]}
       />
 
       <PageBody>
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <Segmentado
-            items={modos}
-            value={modo}
-            onChange={(value) => setModo(value as Modo)}
-            ariaLabel="Métrica de la matriz de rutas"
-            className="w-full sm:w-auto"
-          />
-
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="inline-flex items-center gap-2 text-xs leading-4 text-text">
-              <span aria-hidden="true" className="size-3 rounded-sm bg-primary-soft ring-1 ring-primary" />
-              Ruta usada en el óptimo
-            </span>
-            <span className="inline-flex items-center gap-2 text-xs leading-4 text-text">
-              <span aria-hidden="true" className="size-3 rounded-sm ring-2 ring-accent" />
-              Celda en edición
-            </span>
-            <div className="flex gap-2">
-              <Boton variante="secundario">Descartar</Boton>
-              <Boton>Guardar cambios</Boton>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <Tarjeta relleno="none" className="min-w-0 overflow-hidden">
-            <div className="overflow-x-auto scroll-fino">
-              <table className="tabla min-w-[880px]">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-20 w-[240px] bg-primary-dark">Empresa</th>
-                    {plantas.map((planta) => (
-                      <th key={planta.codigo} className="w-[180px] text-left">
-                        {planta.codigo} {planta.nombre}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {empresas.map((empresa) => (
-                    <tr key={empresa.codigo}>
-                      <td className="sticky left-0 z-10 bg-surface">
-                        <span className="font-semibold text-primary">{empresa.codigo}</span>{" "}
-                        <span className="font-medium text-text">{empresa.nombre}</span>
-                      </td>
-                      {plantas.map((planta) => {
-                        const flujo = flujoDe(empresa.codigo, planta.codigo);
-                        const costo = costos[empresa.codigo][planta.codigo];
-                        const km = distancia(costo, planta.operacion);
-                        const isSelected =
-                          seleccion.empresa === empresa.codigo &&
-                          seleccion.planta === planta.codigo;
-
-                        return (
-                          <td
-                            key={planta.codigo}
-                            className={[
-                              "p-0",
-                              flujo ? "bg-primary-soft" : "",
-                              isSelected ? "ring-2 ring-inset ring-accent" : "",
-                            ].join(" ")}
-                          >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setSeleccion({ empresa: empresa.codigo, planta: planta.codigo })
-                              }
-                              aria-label={`${empresa.codigo} a ${planta.nombre}`}
-                              className={[
-                                "flex h-11 w-full items-center gap-2 px-3 text-left",
-                                modo !== "costo" || flujo ? "justify-between" : "justify-end",
-                              ].join(" ")}
-                            >
-                              {flujo && modo !== "flujo" ? (
-                                <span className="text-xs font-medium leading-4 text-primary">
-                                  {flujo.toneladas} t
-                                </span>
-                              ) : null}
-                              {modo === "costo" ? (
-                                <span
-                                  className={[
-                                    "text-sm tabular-nums",
-                                    flujo ? "font-semibold text-primary-dark" : "text-text",
-                                  ].join(" ")}
-                                >
-                                  {formatNumber(costo)}
-                                </span>
-                              ) : null}
-                              {modo === "distancia" ? (
-                                <span
-                                  className={[
-                                    "text-sm tabular-nums",
-                                    flujo ? "font-semibold text-primary-dark" : "text-text",
-                                  ].join(" ")}
-                                >
-                                  {km} km
-                                </span>
-                              ) : null}
-                              {modo === "flujo" ? (
-                                <span
-                                  className={[
-                                    "w-full text-right text-sm tabular-nums",
-                                    flujo ? "font-semibold text-primary-dark" : "text-muted",
-                                  ].join(" ")}
-                                >
-                                  {flujo ? `${flujo.toneladas} t` : "—"}
-                                </span>
-                              ) : null}
-                            </button>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-
-                  <tr className="bg-bg">
-                    <td className="sticky left-0 z-10 bg-bg text-sm font-semibold text-text">
-                      Costo de operación o<sub>j</sub> (COP/t)
-                    </td>
-                    {plantas.map((planta) => (
-                      <td key={planta.codigo} className="text-right tabular-nums text-text">
-                        {formatNumber(planta.operacion)}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="bg-bg">
-                    <td className="sticky left-0 z-10 bg-bg text-sm font-semibold text-text">
-                      Capacidad (t/sem)
-                    </td>
-                    {plantas.map((planta) => (
-                      <td key={planta.codigo} className="text-right tabular-nums text-text">
-                        {planta.capacidad}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+              <Segmentado
+                items={[
+                  { label: "Costo unitario (COP/t)", value: "costo" },
+                  { label: "Distancia y edición", value: "distancia" },
+                ]}
+                value={vista}
+                onChange={(v) => setVista(v as Vista)}
+                ariaLabel="Vista de la matriz"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Boton
+                  variante="secundario"
+                  icono={<Wand2 className="size-4" aria-hidden="true" />}
+                  onClick={generarFaltantes}
+                  disabled={generando}
+                >
+                  Generar rutas faltantes
+                </Boton>
+                <Boton
+                  icono={<Save className="size-4" aria-hidden="true" />}
+                  disabled={!pendientes.length || guardarRutas.isPending}
+                  onClick={() =>
+                    guardarRutas.mutate(pendientes, { onSuccess: () => setCambios({}) })
+                  }
+                >
+                  Guardar {pendientes.length ? `(${pendientes.length})` : ""}
+                </Boton>
+              </div>
             </div>
-            <p className="border-t border-border px-4 py-3 text-xs leading-4 text-muted">
-              Cada celda es c = 350 · distancia + costo de operación. Las celdas con toneladas son
-              las rutas que usa el modelo exacto.
-            </p>
+            {guardarRutas.isError ? (
+              <div className="px-5 pt-3">
+                <ErrorApi error={guardarRutas.error} />
+              </div>
+            ) : null}
+
+            <div className="mt-4 overflow-x-auto scroll-fino">
+              {matriz.isLoading ? (
+                <div className="px-5 pb-5">
+                  <Cargando />
+                </div>
+              ) : matriz.isError ? (
+                <div className="px-5 pb-5">
+                  <ErrorApi error={matriz.error} />
+                </div>
+              ) : (
+                <table
+                  className="tabla tabla--compacta"
+                  style={{ minWidth: 200 + destinos.length * 150 }}
+                >
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 z-10 w-[200px]">Empresa</th>
+                      {destinos.map((d) => (
+                        <th key={d} className="text-right">
+                          {d}
+                          <span className="block text-[11px] font-normal opacity-80">
+                            {nombres.get(d)}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {origenes.map((o) => (
+                      <tr key={o}>
+                        <td className="sticky left-0 z-10 bg-surface">
+                          <span className="font-semibold">{o}</span>{" "}
+                          <span className="text-xs text-muted">{nombres.get(o)}</span>
+                        </td>
+                        {destinos.map((d) => {
+                          const ruta = porClave.get(`${o}->${d}`);
+                          if (!ruta)
+                            return (
+                              <td key={d} className="text-center text-muted">
+                                —
+                              </td>
+                            );
+                          const cambio = cambios[clave(ruta)];
+                          const habilitada = cambio?.habilitada ?? ruta.habilitada;
+                          if (vista === "costo") {
+                            return (
+                              <td
+                                key={d}
+                                className={[
+                                  "text-right tabular-nums",
+                                  habilitada ? "" : "text-muted line-through",
+                                ].join(" ")}
+                              >
+                                {ruta.costo_unitario != null
+                                  ? formatCurrency(ruta.costo_unitario)
+                                  : "—"}
+                                <span className="block text-[11px] text-muted">
+                                  {formatNumber(ruta.distancia_km ?? 0)} km
+                                  {ruta.duracion_min
+                                    ? ` · ${formatNumber(ruta.duracion_min)} min`
+                                    : ""}
+                                </span>
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={d} className={cambio ? "bg-accent-soft" : ""}>
+                              <div className="flex flex-col items-end gap-1">
+                                <input
+                                  aria-label={`Distancia ${o} a ${d} (km)`}
+                                  className="h-7 w-20 rounded-control border border-border bg-surface px-1 text-right text-xs tabular-nums"
+                                  defaultValue={ruta.distancia_km ?? ""}
+                                  onChange={(e) =>
+                                    editar(ruta, {
+                                      distancia_km: Number(e.target.value.replace(",", ".")),
+                                    })
+                                  }
+                                />
+                                <input
+                                  aria-label={`Costo por t·km ${o} a ${d}`}
+                                  placeholder="k global"
+                                  className="h-7 w-20 rounded-control border border-border bg-surface px-1 text-right text-xs tabular-nums"
+                                  defaultValue={ruta.costo_km_t ?? ""}
+                                  onChange={(e) =>
+                                    e.target.value === ""
+                                      ? editar(ruta, { quitar_costo_km_t: true })
+                                      : editar(ruta, {
+                                          costo_km_t: Number(e.target.value.replace(",", ".")),
+                                        })
+                                  }
+                                />
+                                <label className="flex items-center gap-1 text-[11px] text-muted">
+                                  <input
+                                    type="checkbox"
+                                    checked={habilitada}
+                                    onChange={(e) => editar(ruta, { habilitada: e.target.checked })}
+                                  />
+                                  Abierta
+                                </label>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </Tarjeta>
 
           <Tarjeta>
-            <h2 className="type-title-22 text-text">Parámetros globales</h2>
-
+            <h2 className="type-title-18 text-text">Parámetros del negocio</h2>
+            <p className="mt-1 text-xs text-muted">Se aplican en la próxima ejecución.</p>
             <div className="mt-4 space-y-4">
-              <Campo
-                etiqueta="Costo de transporte k (COP/t·km)"
-                defaultValue={350}
-                estado="exito"
-                ayuda="Cambiarlo recalcula las 40 rutas"
-              />
-              <Campo
-                etiqueta="Penalización planta ficticia M (COP/t)"
-                defaultValue="1.000.000"
-                ayuda="Costo de no procesar una tonelada"
-              />
-              <Campo
-                etiqueta="Tarifa de recepción (COP/t)"
-                defaultValue={0}
-                ayuda="Reservada para escenarios de margen"
-              />
+              {parametros.isLoading ? <Cargando /> : null}
+              {parametros.isError ? <ErrorApi error={parametros.error} /> : null}
+              {(parametros.data ?? []).map((p) => (
+                <FilaParametro key={`${p.clave}-${p.valor}`} parametro={p} />
+              ))}
             </div>
-
-            <div className="mt-5 rounded-card border border-accent/70 bg-accent-soft p-4">
-              <p className="type-title-15 text-primary-dark">
-                Celda en edición · {seleccion.empresa} → {plantaSeleccionada?.nombre}
+            <div className="mt-5 space-y-2 text-xs text-muted">
+              <p>
+                <Etiqueta variante="neutral">OSRM</Etiqueta> distancia vial real sobre OpenStreetMap
               </p>
-              <p className="mt-1 type-cuerpo-strong tabular-nums text-text">
-                350 × {distanciaSeleccionada} km +{" "}
-                {formatNumber(plantaSeleccionada?.operacion ?? 0)} = {formatNumber(costoSeleccionado)}{" "}
-                COP/t
+              <p>
+                <Etiqueta variante="neutral">ESTIMADA</Etiqueta> Haversine × 1,3 o dato del caso
+                base
               </p>
-              <p className="mt-1 text-xs leading-4 text-muted">
-                Al editar la distancia, el costo de la celda se actualiza al instante.
+              <p>
+                <Etiqueta variante="neutral">MANUAL</Etiqueta> editada por el usuario
               </p>
             </div>
-
-            <Boton variante="secundario" className="mt-4">
-              Recalcular todos los costos
-            </Boton>
           </Tarjeta>
         </div>
       </PageBody>

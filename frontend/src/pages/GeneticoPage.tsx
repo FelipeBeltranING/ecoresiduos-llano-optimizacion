@@ -1,171 +1,273 @@
+import { FileSpreadsheet, FileText, Play, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
+import {
+  urlReporte,
+  useEjecutarGenetico,
+  useMatriz,
+  useNodos,
+  useUltimaEjecucion,
+} from "@/api/hooks";
+import type { ParametrosAG } from "@/api/tipos";
+import { MapaReal } from "@/components/mapa/MapaReal";
 import { Boton } from "@/components/ui/Boton";
 import { Campo } from "@/components/ui/Campo";
 import { ConvergenciaChart } from "@/components/ui/ConvergenciaChart";
+import { Cargando, ErrorApi, Vacio } from "@/components/ui/Estado";
 import { Etiqueta } from "@/components/ui/Etiqueta";
-import { Barra } from "@/components/ui/Barra";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { PageBody, PageHero } from "@/components/ui/PageHero";
 import { Segmentado } from "@/components/ui/Segmentado";
 import { Tarjeta } from "@/components/ui/Tarjeta";
-import { costoOptimo } from "@/data/red";
-import { formatNumber } from "@/lib/format";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { activos, descargar, usoDePlantas, ejecucionVigente } from "@/lib/red";
 
-const seleccionItems = [
-  { label: "Torneo (k = 3)", value: "torneo" },
-  { label: "Ruleta", value: "ruleta" },
-];
+const POR_DEFECTO: ParametrosAG = {
+  tamano_poblacion: 100,
+  generaciones: 300,
+  prob_cruce: 0.85,
+  prob_mutacion: 0.1,
+  elitismo: 2,
+  semilla: 42,
+  tipo_seleccion: "torneo",
+  tipo_cruce: "un_punto",
+};
 
-const cruceItems = [
-  { label: "Un punto", value: "un-punto" },
-  { label: "Dos puntos", value: "dos-puntos" },
-];
+type Texto = Record<
+  "tamano_poblacion" | "generaciones" | "prob_cruce" | "prob_mutacion" | "elitismo" | "semilla",
+  string
+>;
+
+const aTexto = (p: ParametrosAG): Texto => ({
+  tamano_poblacion: String(p.tamano_poblacion),
+  generaciones: String(p.generaciones),
+  prob_cruce: String(p.prob_cruce).replace(".", ","),
+  prob_mutacion: String(p.prob_mutacion).replace(".", ","),
+  elitismo: String(p.elitismo),
+  semilla: p.semilla == null ? "" : String(p.semilla),
+});
+
+const num = (t: string) => Number(t.replace(",", "."));
 
 export function GeneticoPage() {
-  const [seleccion, setSeleccion] = useState("torneo");
-  const [cruce, setCruce] = useState("un-punto");
+  const nodos = useNodos();
+  const matriz = useMatriz();
+  const ultimaAg = useUltimaEjecucion("GENETICO");
+  const ultimoExacto = useUltimaEjecucion("EXACTO");
+  const ejecutar = useEjecutarGenetico();
+  const [texto, setTexto] = useState<Texto>(aTexto(POR_DEFECTO));
+  const [seleccion, setSeleccion] = useState<ParametrosAG["tipo_seleccion"]>("torneo");
+  const [cruce, setCruce] = useState<ParametrosAG["tipo_cruce"]>("un_punto");
+
+  const detalle = ultimaAg.detalle.data;
+  const optimo = ultimoExacto.detalle.data?.costo_total ?? null;
+  const gap =
+    detalle?.costo_total != null && optimo ? ((detalle.costo_total - optimo) / optimo) * 100 : null;
+  const nodosActivos = activos(nodos.data);
+
+  const errores: Partial<Record<keyof Texto, string>> = {};
+  if (!(num(texto.tamano_poblacion) >= 10)) errores.tamano_poblacion = "Mínimo 10";
+  if (!(num(texto.generaciones) >= 1)) errores.generaciones = "Mínimo 1";
+  if (!(num(texto.prob_cruce) >= 0 && num(texto.prob_cruce) <= 1))
+    errores.prob_cruce = "Entre 0 y 1";
+  if (!(num(texto.prob_mutacion) >= 0 && num(texto.prob_mutacion) <= 1))
+    errores.prob_mutacion = "Entre 0 y 1";
+  if (!(num(texto.elitismo) >= 0 && num(texto.elitismo) < num(texto.tamano_poblacion)))
+    errores.elitismo = "Menor que la población";
+  const valido = Object.keys(errores).length === 0;
+
+  const campo = (clave: keyof Texto, etiqueta: string, ayuda: string) => (
+    <Campo
+      etiqueta={etiqueta}
+      value={texto[clave]}
+      onChange={(e) => setTexto((t) => ({ ...t, [clave]: e.target.value }))}
+      inputMode="decimal"
+      estado={errores[clave] ? "error" : "normal"}
+      ayuda={errores[clave] ?? ayuda}
+    />
+  );
+
+  const lanzar = () =>
+    ejecutar.mutate({
+      tamano_poblacion: num(texto.tamano_poblacion),
+      generaciones: num(texto.generaciones),
+      prob_cruce: num(texto.prob_cruce),
+      prob_mutacion: num(texto.prob_mutacion),
+      elitismo: num(texto.elitismo),
+      semilla: texto.semilla === "" ? null : num(texto.semilla),
+      tipo_seleccion: seleccion,
+      tipo_cruce: cruce,
+    });
 
   return (
     <>
       <PageHero
         eyebrow="Algoritmo genético · HU-09 · HU-10"
         title="Algoritmo genético"
-        description="Ajusta los parámetros, ejecuta y compara la convergencia con el óptimo del modelo exacto"
+        description="Cromosoma = matriz de flujos; aptitud 1/(Z + λ·penalización); reparación por oferta y capacidad; elitismo y parada a las 50 generaciones sin mejora"
         kpis={[
-          { valor: `$${formatNumber(costoOptimo)}`, etiqueta: "Óptimo de referencia" },
-          { valor: "Selección por torneo", etiqueta: "k = 3" },
-          { valor: "2", etiqueta: "Individuos de elite" },
+          {
+            valor: optimo ? formatCurrency(optimo) : "—",
+            etiqueta: "Óptimo de referencia (exacto)",
+          },
+          {
+            valor: detalle?.costo_total != null ? formatCurrency(detalle.costo_total) : "—",
+            etiqueta: "Mejor costo del AG",
+          },
+          {
+            valor: gap != null ? `${formatNumber(gap)} %` : "—",
+            etiqueta: "Gap frente al óptimo",
+            tono: "acento",
+          },
         ]}
       />
 
       <PageBody>
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <Etiqueta variante="alerta">
-            Cifras ilustrativas hasta implementar HU-09 y HU-10
-          </Etiqueta>
-          <div className="flex flex-wrap gap-2">
-            <Boton variante="secundario">Restablecer valores</Boton>
-            <Boton>Ejecutar algoritmo genético</Boton>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
           <Tarjeta>
             <h2 className="type-title-22 text-text">Parámetros</h2>
-
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <Campo etiqueta="Población" defaultValue={100} ayuda="Individuos" />
-              <Campo etiqueta="Generaciones" defaultValue={300} ayuda="Máximo" />
-              <Campo etiqueta="Tasa de cruce" defaultValue="0,85" ayuda="Entre 0 y 1" />
-              <Campo etiqueta="Tasa de mutación" defaultValue="0,10" ayuda="Entre 0 y 1" />
-              <Campo
-                etiqueta="Penalización λ"
-                defaultValue="1.000.000"
-                ayuda="Violar restricciones"
-              />
-              <Campo etiqueta="Elitismo" defaultValue={2} ayuda="Pasan intactos" />
+              {campo("tamano_poblacion", "Población", "Individuos")}
+              {campo("generaciones", "Generaciones", "Máximo")}
+              {campo("prob_cruce", "Tasa de cruce", "Entre 0 y 1")}
+              {campo("prob_mutacion", "Tasa de mutación", "Entre 0 y 1")}
+              {campo("elitismo", "Elitismo", "Individuos intactos")}
+              {campo("semilla", "Semilla", "Vacía = aleatoria")}
             </div>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="type-label mb-1 text-text">Selección</p>
-                <Segmentado
-                  items={seleccionItems}
-                  value={seleccion}
-                  onChange={setSeleccion}
-                  ariaLabel="Método de selección"
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <p className="type-label mb-1 text-text">Cruce</p>
-                <Segmentado
-                  items={cruceItems}
-                  value={cruce}
-                  onChange={setCruce}
-                  ariaLabel="Tipo de cruce"
-                  className="w-full"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Campo etiqueta="Semilla" defaultValue={42} ayuda="Reproducible" />
-                <Campo etiqueta="Parada" defaultValue={50} ayuda="Generaciones sin mejora" />
-              </div>
+            <p className="mt-4 type-label text-text">Selección</p>
+            <Segmentado
+              className="mt-1"
+              items={[
+                { label: "Torneo (k = 3)", value: "torneo" },
+                { label: "Ruleta", value: "ruleta" },
+              ]}
+              value={seleccion}
+              onChange={(v) => setSeleccion(v as ParametrosAG["tipo_seleccion"])}
+              ariaLabel="Tipo de selección"
+            />
+            <p className="mt-4 type-label text-text">Cruce</p>
+            <Segmentado
+              className="mt-1"
+              items={[
+                { label: "Un punto", value: "un_punto" },
+                { label: "Dos puntos", value: "dos_puntos" },
+              ]}
+              value={cruce}
+              onChange={(v) => setCruce(v as ParametrosAG["tipo_cruce"])}
+              ariaLabel="Tipo de cruce"
+            />
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Boton
+                icono={<Play className="size-4" aria-hidden="true" />}
+                disabled={!valido || ejecutar.isPending}
+                onClick={lanzar}
+              >
+                {ejecutar.isPending ? "Evolucionando…" : "Ejecutar AG"}
+              </Boton>
+              <Boton
+                variante="secundario"
+                icono={<RotateCcw className="size-4" aria-hidden="true" />}
+                onClick={() => {
+                  setTexto(aTexto(POR_DEFECTO));
+                  setSeleccion("torneo");
+                  setCruce("un_punto");
+                }}
+              >
+                Restablecer
+              </Boton>
             </div>
-
-            <div className="mt-4 rounded-card bg-primary-soft p-4">
-              <p className="type-title-15 text-primary-dark">Población inicial</p>
-              <p className="mt-1 text-xs leading-4 text-primary-dark/80">
-                10 % construida con la heurística de costo mínimo y 90 % aleatoria. Cada individuo
-                se repara reescalando sus filas para cumplir la oferta.
-              </p>
-            </div>
+            {ejecutar.isError ? (
+              <div className="mt-3">
+                <ErrorApi error={ejecutar.error} />
+              </div>
+            ) : null}
           </Tarjeta>
 
-          <div className="min-w-0">
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <KpiCard etiqueta="Mejor costo" valor="$65.012.000" detalle="COP por semana" />
-              <KpiCard etiqueta="Gap frente al óptimo" valor="0,50 %" detalle="(Z_AG − Z*) / Z*" />
-              <KpiCard etiqueta="Generaciones" valor="187" detalle="Parada: 50 sin mejora" />
-              <KpiCard etiqueta="Violaciones" valor="0" detalle="Tras la reparación" />
-            </div>
-
-            <Tarjeta className="mt-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="type-title-15 text-text">Convergencia por generación</h2>
-                <ul className="flex flex-wrap items-center gap-4 text-xs leading-4 text-text">
-                  <li className="inline-flex items-center gap-2">
-                    <span aria-hidden="true" className="h-0.5 w-4 rounded bg-primary" />
-                    Mejor costo
-                  </li>
-                  <li className="inline-flex items-center gap-2">
-                    <span aria-hidden="true" className="h-0.5 w-4 rounded bg-accent" />
-                    Costo promedio
-                  </li>
-                  <li className="inline-flex items-center gap-2">
-                    <span
-                      aria-hidden="true"
-                      className="h-0 w-4 border-t-2 border-dashed border-text"
-                    />
-                    Óptimo exacto
-                  </li>
-                </ul>
-              </div>
-              <div className="mt-3 overflow-x-auto scroll-fino">
-                <ConvergenciaChart className="h-auto min-w-[680px]" />
-              </div>
-            </Tarjeta>
-
-            <Tarjeta className="mt-4">
-              <h2 className="type-title-15 text-text">Calidad frente al óptimo</h2>
-              <div className="mt-4 space-y-4">
-                <div className="flex items-center gap-3">
-                  <span className="w-[150px] shrink-0 text-[13px] leading-5 text-text">
-                    Modelo exacto
-                  </span>
-                  <Barra valor={1} className="flex-1" etiqueta="Costo del modelo exacto" />
-                  <span className="shrink-0 type-cuerpo-strong tabular-nums text-text">
-                    ${formatNumber(costoOptimo)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-[150px] shrink-0 text-[13px] leading-5 text-text">
-                    Algoritmo genético
-                  </span>
-                  <Barra
-                    valor={costoOptimo / 65_012_000}
-                    className="flex-1"
-                    etiqueta="Costo del algoritmo genético"
+          <div className="min-w-0 space-y-4">
+            {ultimaAg.cargando ? <Cargando texto="Cargando la última corrida…" /> : null}
+            {!ultimaAg.cargando && !detalle ? (
+              <Vacio>Aún no hay corridas del AG sobre la red actual.</Vacio>
+            ) : null}
+            {detalle && !ejecucionVigente(detalle.flujos, nodosActivos) ? (
+              <Etiqueta variante="alerta">
+                La red cambió desde esta corrida: vuelva a ejecutar el AG
+              </Etiqueta>
+            ) : null}
+            {detalle ? (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <KpiCard
+                    etiqueta="Mejor costo"
+                    valor={formatCurrency(detalle.costo_total ?? 0)}
+                    tono="primario"
                   />
-                  <span className="shrink-0 type-cuerpo-strong tabular-nums text-text">
-                    $65.012.000
-                  </span>
+                  <KpiCard
+                    etiqueta="Gap"
+                    valor={gap != null ? `${formatNumber(gap)} %` : "—"}
+                    detalle="Frente al exacto"
+                    tono="acento"
+                  />
+                  <KpiCard
+                    etiqueta="Tiempo"
+                    valor={`${formatNumber((detalle.tiempo_ms ?? 0) / 1000)} s`}
+                    detalle={`${detalle.convergencia.length} generaciones`}
+                  />
+                  <KpiCard
+                    etiqueta="Violaciones"
+                    valor={formatNumber(detalle.violaciones ?? 0)}
+                    detalle="Oferta y capacidad"
+                    tono={(detalle.violaciones ?? 0) > 1e-3 ? "peligro" : "texto"}
+                  />
                 </div>
-              </div>
-            </Tarjeta>
+                <Tarjeta>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="type-title-15 text-text">Convergencia (HU-10)</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Etiqueta variante="neutral">
+                        {detalle.parametros?.tipo_seleccion ?? "torneo"} ·{" "}
+                        {detalle.parametros?.tipo_cruce ?? "un_punto"} · semilla{" "}
+                        {detalle.parametros?.semilla ?? "—"}
+                      </Etiqueta>
+                      <Boton
+                        variante="fantasma"
+                        icono={<FileSpreadsheet className="size-4" aria-hidden="true" />}
+                        onClick={() => descargar(urlReporte("ejecuciones", detalle.id, "xlsx"))}
+                      >
+                        Excel
+                      </Boton>
+                      <Boton
+                        variante="fantasma"
+                        icono={<FileText className="size-4" aria-hidden="true" />}
+                        onClick={() => descargar(urlReporte("ejecuciones", detalle.id, "pdf"))}
+                      >
+                        PDF
+                      </Boton>
+                    </div>
+                  </div>
+                  <ConvergenciaChart
+                    className="mt-4"
+                    optimo={optimo}
+                    puntos={detalle.convergencia.map((c) => ({
+                      generacion: c.generacion,
+                      mejor: c.mejor_costo,
+                      promedio: c.costo_promedio,
+                    }))}
+                  />
+                </Tarjeta>
+                <Tarjeta>
+                  <h2 className="type-title-15 text-text">Mejor solución del AG en el mapa</h2>
+                  <div className="mt-3">
+                    <MapaReal
+                      nodos={nodosActivos}
+                      rutas={matriz.data?.rutas}
+                      flujos={detalle.flujos}
+                      usoPlantas={usoDePlantas(nodosActivos, detalle.flujos)}
+                      alto="h-[360px]"
+                    />
+                  </div>
+                </Tarjeta>
+              </>
+            ) : null}
           </div>
         </div>
       </PageBody>

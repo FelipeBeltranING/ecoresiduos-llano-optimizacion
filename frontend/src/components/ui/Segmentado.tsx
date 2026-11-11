@@ -11,13 +11,7 @@ interface SegmentadoProps {
   className?: string;
 }
 
-export function Segmentado({
-  items,
-  value,
-  onChange,
-  ariaLabel,
-  className = "",
-}: SegmentadoProps) {
+export function Segmentado({ items, value, onChange, ariaLabel, className = "" }: SegmentadoProps) {
   return (
     <div
       role="group"

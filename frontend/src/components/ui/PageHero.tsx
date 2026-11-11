@@ -83,10 +83,7 @@ interface PageBodyProps {
 export function PageBody({ children, className = "" }: PageBodyProps) {
   return (
     <div
-      className={[
-        "mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8",
-        className,
-      ].join(" ")}
+      className={["mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8", className].join(" ")}
     >
       {children}
     </div>
