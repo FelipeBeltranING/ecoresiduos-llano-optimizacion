@@ -61,6 +61,8 @@ class ConvergenciaSalida(BaseModel):
 
 # Detalle completo de una ejecución
 class EjecucionDetalle(EjecucionCreada):
+    violaciones: float | None = None
+    escenario_id: uuid.UUID | None = None
     parametros: dict | None
     creado_en: datetime
     flujos: list[FlujoSalida]

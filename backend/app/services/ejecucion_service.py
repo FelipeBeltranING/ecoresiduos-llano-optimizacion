@@ -1,6 +1,7 @@
 import uuid
 from dataclasses import asdict
 
+import numpy as np
 from sqlalchemy.orm import Session
 
 from app.db.models import Ejecucion, Metodo
@@ -18,6 +19,7 @@ from app.optimizacion.red import (
     ResultadoValidacion,
     preparar_red_para_motor,
 )
+from app.optimizacion.verificador import verificar_solucion
 from app.repositories import ejecucion_repository, parametro_repository
 from app.schemas.optimizacion import (
     ConvergenciaSalida,
@@ -65,7 +67,22 @@ def snapshot_de_red(red: RedLogistica) -> dict:
         "capacidad": red.capacidad.tolist(),
         "costos": red.costos.tolist(),
         "rutas_habilitadas": red.rutas_habilitadas.tolist(),
+        "costo_operacion": None if red.costo_operacion is None else red.costo_operacion.tolist(),
     }
+
+
+# Red reconstruida desde el snapshot guardado con una ejecución
+def red_desde_snapshot(snapshot: dict) -> RedLogistica:
+    operacion = snapshot.get("costo_operacion")
+    return RedLogistica(
+        codigos_empresas=list(snapshot["empresas"]),
+        codigos_plantas=list(snapshot["plantas"]),
+        oferta=np.array(snapshot["oferta"], dtype=float),
+        capacidad=np.array(snapshot["capacidad"], dtype=float),
+        costos=np.array(snapshot["costos"], dtype=float),
+        rutas_habilitadas=np.array(snapshot["rutas_habilitadas"], dtype=bool),
+        costo_operacion=None if operacion is None else np.array(operacion, dtype=float),
+    )
 
 
 # Guardado de los flujos mayores que cero
@@ -133,9 +150,13 @@ def guardar_sensibilidad_exacto(
 
 
 # Ejecución del modelo exacto y guardado de su resultado
-def ejecutar_exacto(sesion: Session) -> Ejecucion:
-    red = preparar_red(sesion)
+def ejecutar_exacto(
+    sesion: Session, red: RedLogistica | None = None, escenario_id: uuid.UUID | None = None
+) -> Ejecucion:
+    if red is None:
+        red = preparar_red(sesion)
     resultado = contratos.resolver_exacto(red)
+    violaciones = verificar_solucion(red, resultado.flujos).total
 
     try:
         ejecucion = ejecucion_repository.crear_ejecucion(
@@ -146,6 +167,8 @@ def ejecutar_exacto(sesion: Session) -> Ejecucion:
             resultado.tiempo_ms,
             None,
             snapshot_de_red(red),
+            escenario_id=escenario_id,
+            violaciones=violaciones,
         )
         guardar_flujos(sesion, ejecucion, red, resultado.flujos)
         guardar_sensibilidad_exacto(sesion, ejecucion, red, resultado)
@@ -189,10 +212,17 @@ def guardar_convergencia(
 
 
 # Ejecución del AG y guardado de su resultado
-def ejecutar_genetico(sesion: Session, entrada: ParametrosAGEntrada) -> Ejecucion:
-    red = preparar_red(sesion)
+def ejecutar_genetico(
+    sesion: Session,
+    entrada: ParametrosAGEntrada,
+    red: RedLogistica | None = None,
+    escenario_id: uuid.UUID | None = None,
+) -> Ejecucion:
+    if red is None:
+        red = preparar_red(sesion)
     parametros = convertir_parametros_ag(sesion, entrada)
     resultado = contratos.ejecutar_genetico(red, parametros)
+    violaciones = verificar_solucion(red, resultado.flujos).total
 
     try:
         ejecucion = ejecucion_repository.crear_ejecucion(
@@ -203,6 +233,8 @@ def ejecutar_genetico(sesion: Session, entrada: ParametrosAGEntrada) -> Ejecucio
             resultado.tiempo_ms,
             asdict(parametros),
             snapshot_de_red(red),
+            escenario_id=escenario_id,
+            violaciones=violaciones,
         )
         guardar_flujos(sesion, ejecucion, red, resultado.flujos)
         guardar_convergencia(sesion, ejecucion, resultado)
@@ -249,6 +281,8 @@ def obtener_detalle(sesion: Session, ejecucion_id: uuid.UUID) -> EjecucionDetall
         estado=ejecucion.estado,
         costo_total=ejecucion.costo_total,
         tiempo_ms=ejecucion.tiempo_ms,
+        violaciones=ejecucion.violaciones,
+        escenario_id=ejecucion.escenario_id,
         parametros=ejecucion.parametros,
         creado_en=ejecucion.creado_en,
         flujos=flujos,

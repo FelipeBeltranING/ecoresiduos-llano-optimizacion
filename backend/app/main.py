@@ -10,6 +10,7 @@ from app.api.v1.routers import (
     parametros,
     red,
     rutas,
+    sensibilidad,
 )
 from app.core.config import settings
 
@@ -36,3 +37,4 @@ app.include_router(parametros.router, prefix=PREFIJO_API)
 app.include_router(red.router, prefix=PREFIJO_API)
 app.include_router(optimizacion.router, prefix=PREFIJO_API)
 app.include_router(ejecuciones.router, prefix=PREFIJO_API)
+app.include_router(sensibilidad.router, prefix=PREFIJO_API)
