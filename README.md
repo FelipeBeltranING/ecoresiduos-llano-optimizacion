@@ -7,7 +7,7 @@
 ![React](https://img.shields.io/badge/React-18-61DAFB)
 ![PostgreSQL](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-green)
-![Estado](https://img.shields.io/badge/Estado-En%20desarrollo-yellow)
+![Estado](https://img.shields.io/badge/Estado-v1.0.0--rc-green)
 
 **Universidad de los Llanos** · Facultad de Ciencias Básicas e Ingeniería · Programa de Ingeniería de Sistemas
 **Asignatura:** Optimización · **Periodo académico:** 2026-II · **Proyecto final de curso** · **Grupo Orion**
@@ -79,12 +79,12 @@ Diseñar y desarrollar una solución computacional web basada en modelos de opti
 
 ## 4. Funcionalidades
 
-Organizadas en 5 épicas y 17 historias de usuario (detalle en `docs/Documento_Base_Proyecto_Orion.docx`).
+Organizadas en 5 épicas y 19 historias de usuario (detalle en el Documento Base del Proyecto Orion).
 
 | Épica | Historias de usuario |
 |---|---|
-| **E1 Gestión dinámica de la red** | HU-01 Empresas · HU-02 Plantas · HU-03 Rutas y matriz de costos · HU-04 Parámetros globales · HU-05 Importar/exportar y caso base · HU-17 Centros de acopio |
-| **E2 Optimización exacta** | HU-06 Validar la red · HU-07 Resolver el modelo exacto · HU-08 Visualizar red y flujos |
+| **E1 Gestión dinámica de la red** | HU-01 Empresas · HU-02 Plantas · HU-03 Rutas y matriz de costos · HU-04 Parámetros globales · HU-05 Importar/exportar y caso base · HU-17 Centros de acopio · HU-19 Caso real del Meta con datos públicos |
+| **E2 Optimización exacta** | HU-06 Validar la red · HU-07 Resolver el modelo exacto · HU-08 Visualizar red y flujos · HU-18 Mapa real con OpenStreetMap y rutas viales OSRM |
 | **E3 Algoritmo Genético** | HU-09 Configurar y ejecutar el AG · HU-10 Convergencia |
 | **E4 Análisis de sensibilidad** | HU-11 Escenarios · HU-12 Precios sombra, costos reducidos y rangos |
 | **E5 Comparación y reportes** | HU-13 Reporte comparativo · HU-14 Escalabilidad · HU-15 Historial · HU-16 Exportar PDF/Excel |
@@ -92,6 +92,8 @@ Organizadas en 5 épicas y 17 historias de usuario (detalle en `docs/Documento_B
 - Aplicación web **responsive** (móvil, tableta y escritorio).
 - **Sin inicio de sesión**: acceso directo a todas las funciones.
 - **Escalable**: ningún tamaño de red está fijo en el código; agregar nodos es solo insertar registros.
+- **Mapa real**: Leaflet sobre OpenStreetMap; cada flujo se dibuja sobre el trazado vial que devuelve OSRM.
+- **Datos reales**: el caso real del Meta usa la producción de palma y arroz por municipio (EVA 2018, MinAgricultura/UPRA), el inventario bovino (ICA/FNG 2025), las coordenadas DIVIPOLA (DANE) y distancias por carretera de OSRM.
 
 ## 5. Modelo matemático
 
@@ -184,7 +186,7 @@ $$\text{Gap}(\%) = \frac{Z_{AG} - Z^{*}}{Z^{*}} \times 100$$
 
 | Capa | Tecnologías |
 |---|---|
-| **Frontend** | React 18 + TypeScript, Vite, Tailwind CSS, React Router, TanStack Query + Axios, React Hook Form + Zod, React Leaflet (mapa), Recharts (gráficas) |
+| **Frontend** | React 18 + TypeScript, Vite, Tailwind CSS, React Router, TanStack Query + Axios, React Hook Form + Zod, React Leaflet + OpenStreetMap (mapa real), gráficas SVG propias |
 | **Backend** | Python 3.12, FastAPI + Uvicorn, Pydantic v2 |
 | **Optimización** | PuLP + CBC (modelo exacto, duales y holguras), NumPy (AG), NetworkX (validación del grafo) |
 | **Datos** | Supabase PostgreSQL 17, SQLAlchemy 2.0 (ORM), Alembic (migraciones), psycopg 3 |
@@ -272,10 +274,23 @@ cp .env.example .env            # VITE_API_URL=http://localhost:8000/api/v1
 npm run dev                     # http://localhost:5173
 ```
 
-**Cargar los datos de prueba:** desde la aplicación, en *Red logística → Importar / exportar → Cargar caso base*, o con:
+**Cargar los datos de prueba:** desde el *Panel* (botones *Cargar caso base* y *Cargar caso real del Meta*), o con:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/datos/caso-base
+curl -X POST http://localhost:8000/api/v1/datos/caso-real
+```
+
+**Todo con Docker** (PostgreSQL 17 local + API, sin Supabase):
+
+```bash
+docker compose up -d --build    # API en http://localhost:8000/docs
+```
+
+**Regenerar el caso real** desde las fuentes públicas (requiere internet):
+
+```bash
+python scripts/generar_caso_real.py
 ```
 
 ### Variables de entorno
@@ -285,6 +300,7 @@ curl -X POST http://localhost:8000/api/v1/datos/caso-base
 | `DATABASE_URL` | backend | `postgresql+psycopg://postgres.<proyecto>:<clave>@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require` |
 | `TEST_DATABASE_URL` | backend (solo pruebas de integración; nunca Supabase) | `postgresql+psycopg://postgres:postgres@localhost:5432/ecoresiduos_test` |
 | `CORS_ORIGINS` | backend | `http://localhost:5173,https://ecoresiduos-orion.vercel.app` |
+| `OSRM_HABILITADO` / `OSRM_URL` | backend | `true` / `https://router.project-osrm.org` (distancia vial real al crear nodos) |
 | `VITE_API_URL` | frontend | `http://localhost:8000/api/v1` |
 
 > Las credenciales de Supabase solo van en `backend/.env`, que **no** se sube al repositorio. Use el Session pooler (puerto 5432), no el Transaction pooler (6543): rompe los prepared statements de psycopg 3.
@@ -298,12 +314,14 @@ Tablas principales:
 | `nodo` | Empresas, centros de acopio y plantas (campo `tipo`: FUENTE, ACOPIO, PLANTA) |
 | `ruta` | Arcos del grafo: origen, destino, distancia, costo por t·km y estado |
 | `parametro_global` | Coeficientes del negocio (costo por t·km, tarifa por tonelada, penalización, λ) |
-| `escenario`, `ajuste_escenario` | Escenarios de sensibilidad y sus variaciones porcentuales |
-| `ejecucion` | Cada corrida (exacta o AG) con costo, tiempo, parámetros y snapshot de la red |
+| `escenario` | Escenarios de sensibilidad con sus ajustes (JSON) |
+| `ejecucion` | Cada corrida (exacta o AG) con costo, tiempo, violaciones, parámetros, escenario y snapshot de la red |
 | `flujo_resultado` | Flujos $x_{ij} > 0$ de cada ejecución |
-| `sensibilidad_resultado` | Precios sombra, costos reducidos, holguras y rangos |
+| `sensibilidad_resultado` | Precios sombra, costos reducidos, holguras y rangos de estabilidad |
 | `convergencia_ag` | Mejor costo y costo promedio por generación |
-| `comparacion`, `benchmark` | Comparaciones exacto vs. AG y pruebas de escalabilidad |
+| `analisis` | Reportes comparativos exacto vs. AG y de escalabilidad (resultado en JSON) |
+
+Migraciones: V1 red base · V2 ejecuciones · V3 escenarios y análisis · V4 trazado vial de las rutas (polilínea OSRM, duración y fuente de la distancia).
 
 Comandos de Alembic:
 
@@ -317,20 +335,24 @@ alembic downgrade -1                                 # revertir la última migra
 
 Prefijo `/api/v1`. Documentación interactiva en `/docs`.
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` `POST` | `/nodos` | Listar y crear empresas, plantas y acopios (`?tipo=FUENTE\|PLANTA\|ACOPIO`) |
-| `PUT` `DELETE` | `/nodos/{id}` | Actualizar o desactivar un nodo |
-| `GET` `PUT` | `/rutas/matriz` · `/rutas/lote` | Consultar y editar la matriz de distancias y costos |
-| `GET` `PUT` | `/parametros` | Parámetros globales |
-| `POST` `GET` | `/datos/importar` · `/datos/exportar` · `/datos/caso-base` | Importación, exportación y caso base |
-| `GET` | `/red/validacion` | Validar el balance y la consistencia de la red |
-| `POST` | `/optimizacion/exacto` · `/optimizacion/genetico` | Ejecutar el modelo exacto o el AG |
-| `GET` | `/ejecuciones` · `/ejecuciones/{id}` | Historial y detalle |
-| `GET` | `/ejecuciones/{id}/convergencia` · `/ejecuciones/{id}/sensibilidad` | Convergencia del AG y sensibilidad |
-| `POST` | `/escenarios` · `/escenarios/{id}/ejecutar` | Crear y ejecutar escenarios |
-| `POST` `GET` | `/comparaciones` · `/escalabilidad` | Reporte comparativo y benchmark |
-| `GET` | `/reportes/{id}.pdf` · `/reportes/{id}.xlsx` | Descargar reportes |
+| Método | Ruta | Descripción | HU |
+|---|---|---|---|
+| `GET` `POST` | `/nodos` | Listar (`?tipo=FUENTE\|PLANTA\|ACOPIO`) y crear nodos; las rutas se generan solas | 01, 02, 17 |
+| `GET` `PATCH` `DELETE` | `/nodos/{codigo}` | Consultar, editar o desactivar un nodo | 01, 02 |
+| `GET` | `/rutas/matriz` | Matriz de distancias, costo unitario y trazado vial | 03, 18 |
+| `PUT` · `POST` | `/rutas` · `/rutas/generar-faltantes` | Edición por lote y rutas faltantes | 03 |
+| `GET` `PUT` | `/parametros` · `/parametros/{clave}` | Parámetros globales | 04 |
+| `POST` | `/datos/caso-base` · `/datos/caso-real` | Cargar el caso base o el caso real del Meta | 05, 19 |
+| `GET` · `POST` | `/datos/exportar` · `/datos/importar` | Excel de la red; importación con validación por fila | 05 |
+| `GET` | `/datos/caso-real/fuentes` | Fuentes y coeficientes del caso real | 19 |
+| `GET` | `/red/validacion` | Balance, planta ficticia y nodos aislados | 06 |
+| `POST` | `/optimizacion/exacto` · `/optimizacion/genetico` | Ejecutar el modelo exacto o el AG | 07, 09 |
+| `GET` | `/ejecuciones` · `/ejecuciones/{id}` | Historial filtrado y paginado; detalle con flujos, sensibilidad y convergencia | 08, 10, 15 |
+| `GET` `POST` `DELETE` | `/escenarios` · `/escenarios/{id}` · `/escenarios/{id}/ejecutar` | Escenarios con ambos métodos | 11 |
+| `POST` · `GET` | `/sensibilidad/rangos/{ejecucion_id}` · `/sensibilidad/tornado` | Rangos de estabilidad y tornado | 12 |
+| `POST` | `/analisis/comparacion` · `/analisis/escalabilidad` | Comparativo y escalabilidad en segundo plano | 13, 14 |
+| `GET` | `/analisis` · `/analisis/{id}` | Estado y resultado de los análisis | 13, 14 |
+| `GET` | `/reportes/ejecuciones/{id}.pdf\|xlsx` · `/reportes/analisis/{id}.pdf\|xlsx` | Reportes PDF y Excel | 16 |
 
 ## 14. Datos de prueba
 
@@ -345,6 +367,17 @@ El caso base del Meta (10 empresas, 4 plantas y 40 rutas) se carga con un clic o
 
 **Valor de referencia del caso base** (oferta 890 t, capacidad 950 t, $k$ = 350 COP/t·km): **Z\* = $64.691.000 COP por semana**. Villavicencio y Restrepo quedan saturadas.
 
+**Caso real del Meta** (12 fuentes, 4 plantas, 48 rutas OSRM; oferta 919,3 t/semana): **Z\* = $59.295.262 COP por semana**. Generado por `scripts/generar_caso_real.py` con:
+
+| Dato | Fuente |
+|---|---|
+| Producción 2018 de palma (aceite crudo) y arroz (paddy verde) por municipio | Evaluaciones Agropecuarias Municipales, MinAgricultura/UPRA, datos.gov.co `2pnw-mmge` |
+| Bovinos por municipio (vigencia 2025, ciclo I) | Inventario bovino y bufalino por ciclo de vacunación, FNG/ICA, datos.gov.co `cea5-4ctf` |
+| Coordenadas de los municipios | DIVIPOLA, DANE, datos.gov.co `gdxc-w37w` |
+| Distancia vial, duración y trazado | OSRM sobre OpenStreetMap |
+
+Coeficientes: tusa = 22 % del racimo y aceite = 21 % del racimo (≈ 1,05 t de tusa por t de aceite); cascarilla = 20 % del paddy; 10 kg de estiércol por bovino al día. La captación (6,5 % palma, 25 % arroz, 0,5 % estiércol) es un supuesto de negocio de la empresa.
+
 ## 15. Pruebas
 
 ```bash
@@ -355,8 +388,6 @@ cd backend && pytest --cov=app
 # Frontend: componentes
 cd frontend && npm run test
 
-# End-to-end
-cd frontend && npx playwright test
 ```
 
 Metas: cobertura ≥ 80 % en servicios y motores de optimización del backend, y ≥ 60 % en el frontend. Los resultados del modelo exacto se validan contra valores de referencia calculados de forma independiente.
@@ -387,8 +418,9 @@ Metodología **Scrum** con 2 sprints. Tablero en GitHub Projects.
 
 **Entregables:**
 
-- [ ] Informe técnico (formato IEEE) en `docs/`
-- [ ] Código fuente documentado y modular (módulos exacto, genético, interfaz y sensibilidad)
+- [ ] Informe técnico (formato IEEE)
+- [x] Código fuente documentado y modular (módulos exacto, genético, interfaz y sensibilidad)
+- [x] Casos de prueba: caso base, caso real del Meta e instancias sintéticas de escalabilidad
 - [ ] Sustentación práctica con casos de prueba y análisis de sensibilidad en vivo
 
 ## 18. Licencia
