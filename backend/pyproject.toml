@@ -14,7 +14,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
-    "pulp>=2.8",
+    "pulp>=2.8,<4",
     "numpy>=1.26",
     "scipy>=1.13",
     "pandas>=2.2",
@@ -49,6 +49,7 @@ known-third-party = ["alembic"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
     "integracion: pruebas que necesitan TEST_DATABASE_URL",
 ]
