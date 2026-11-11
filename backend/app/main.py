@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routers import (
+    analisis,
     datos,
     ejecuciones,
     health,
@@ -9,6 +10,7 @@ from app.api.v1.routers import (
     optimizacion,
     parametros,
     red,
+    reportes,
     rutas,
     sensibilidad,
 )
@@ -17,7 +19,7 @@ from app.core.config import settings
 PREFIJO_API = "/api/v1"
 
 # Aplicación principal
-app = FastAPI(title="EcoResiduos del Llano API", version="0.1.0")
+app = FastAPI(title="EcoResiduos del Llano API", version="1.0.0")
 
 # CORS para el frontend
 app.add_middleware(
@@ -38,3 +40,5 @@ app.include_router(red.router, prefix=PREFIJO_API)
 app.include_router(optimizacion.router, prefix=PREFIJO_API)
 app.include_router(ejecuciones.router, prefix=PREFIJO_API)
 app.include_router(sensibilidad.router, prefix=PREFIJO_API)
+app.include_router(analisis.router, prefix=PREFIJO_API)
+app.include_router(reportes.router, prefix=PREFIJO_API)

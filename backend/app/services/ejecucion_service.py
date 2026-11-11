@@ -222,6 +222,17 @@ def ejecutar_genetico(
         red = preparar_red(sesion)
     parametros = convertir_parametros_ag(sesion, entrada)
     resultado = contratos.ejecutar_genetico(red, parametros)
+    return guardar_genetico(sesion, red, parametros, resultado, escenario_id)
+
+
+# Guardado de una corrida del AG ya calculada
+def guardar_genetico(
+    sesion: Session,
+    red: RedLogistica,
+    parametros: ParametrosAG,
+    resultado: ResultadoGenetico,
+    escenario_id: uuid.UUID | None = None,
+) -> Ejecucion:
     violaciones = verificar_solucion(red, resultado.flujos).total
 
     try:
