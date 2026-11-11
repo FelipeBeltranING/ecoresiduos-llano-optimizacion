@@ -4,10 +4,12 @@ from app.optimizacion.contratos import ParametrosAG, ejecutar_genetico, resolver
 from tests.utilidades import construir_red_caso_base
 
 
-# Mientras no se conecten los motores, los contratos avisan con NotImplementedError
-def test_resolver_exacto_pendiente() -> None:
-    with pytest.raises(NotImplementedError, match="HU-07"):
-        resolver_exacto(construir_red_caso_base())
+# El contrato del exacto devuelve el resultado completo del modelo
+def test_resolver_exacto_conectado() -> None:
+    resultado = resolver_exacto(construir_red_caso_base())
+
+    assert resultado.flujos.shape == (10, 4)
+    assert resultado.tiempo_ms > 0
 
 
 def test_ejecutar_genetico_pendiente() -> None:

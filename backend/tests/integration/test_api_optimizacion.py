@@ -81,17 +81,19 @@ def test_validacion_de_la_red(cliente_con_caso_base: TestClient) -> None:
     assert cuerpo["necesita_planta_ficticia"] is False
 
 
-# Mientras los motores no estén conectados la API responde 501 y no guarda nada
-def test_exacto_pendiente_responde_501(
+# El modelo exacto real resuelve el caso base y guarda la ejecución
+def test_exacto_real_resuelve_el_caso_base(
     cliente_con_caso_base: TestClient, sesion_pruebas: Session
 ) -> None:
     antes = contar_ejecuciones(sesion_pruebas)
 
     respuesta = cliente_con_caso_base.post("/api/v1/optimizacion/exacto")
 
-    assert respuesta.status_code == 501
-    assert "HU-07" in respuesta.json()["detail"]
-    assert contar_ejecuciones(sesion_pruebas) == antes
+    assert respuesta.status_code == 201
+    cuerpo = respuesta.json()
+    assert cuerpo["estado"] == ESTADO_OPTIMO
+    assert cuerpo["costo_total"] == 64_691_000
+    assert contar_ejecuciones(sesion_pruebas) == antes + 1
 
 
 def test_genetico_pendiente_responde_501(
