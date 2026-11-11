@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -15,6 +16,8 @@ class ParametrosAGEntrada(BaseModel):
     elitismo: int = Field(default=2, ge=0)
     lambda_pen: float | None = Field(default=None, gt=0)
     semilla: int | None = Field(default=None, ge=0)
+    tipo_seleccion: Literal["torneo", "ruleta"] = "torneo"
+    tipo_cruce: Literal["un_punto", "dos_puntos"] = "un_punto"
 
     @model_validator(mode="after")
     def revisar_elitismo(self) -> "ParametrosAGEntrada":

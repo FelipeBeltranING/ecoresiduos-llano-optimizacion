@@ -96,16 +96,20 @@ def test_exacto_real_resuelve_el_caso_base(
     assert contar_ejecuciones(sesion_pruebas) == antes + 1
 
 
-def test_genetico_pendiente_responde_501(
+def test_genetico_real_guarda_convergencia(
     cliente_con_caso_base: TestClient, sesion_pruebas: Session
 ) -> None:
     antes = contar_ejecuciones(sesion_pruebas)
 
-    respuesta = cliente_con_caso_base.post("/api/v1/optimizacion/genetico", json={"semilla": 42})
+    respuesta = cliente_con_caso_base.post(
+        "/api/v1/optimizacion/genetico", json={"semilla": 42, "generaciones": 30}
+    )
 
-    assert respuesta.status_code == 501
-    assert "HU-09" in respuesta.json()["detail"]
-    assert contar_ejecuciones(sesion_pruebas) == antes
+    assert respuesta.status_code == 201
+    ejecucion_id = respuesta.json()["id"]
+    detalle = cliente_con_caso_base.get(f"/api/v1/ejecuciones/{ejecucion_id}").json()
+    assert len(detalle["convergencia"]) > 0
+    assert contar_ejecuciones(sesion_pruebas) == antes + 1
 
 
 # Ejecución inexistente

@@ -169,6 +169,8 @@ def convertir_parametros_ag(sesion: Session, entrada: ParametrosAGEntrada) -> Pa
         elitismo=entrada.elitismo,
         lambda_pen=lambda_pen,
         semilla=entrada.semilla,
+        tipo_seleccion=entrada.tipo_seleccion,
+        tipo_cruce=entrada.tipo_cruce,
     )
 
 

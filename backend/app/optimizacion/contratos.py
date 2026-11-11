@@ -30,6 +30,8 @@ class ParametrosAG:
     elitismo: int = 2
     lambda_pen: float = 1_000_000
     semilla: int | None = None
+    tipo_seleccion: str = "torneo"
+    tipo_cruce: str = "un_punto"
 
 
 # Mejor costo y costo promedio de una generación
@@ -59,7 +61,6 @@ def resolver_exacto(red: RedLogistica) -> ResultadoExacto:
 
 # Punto de conexión del Algoritmo Genético: aquí se llama a la implementación del equipo
 def ejecutar_genetico(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGenetico:
-    raise NotImplementedError(
-        "El Algoritmo Genético (HU-09) todavía no está conectado. "
-        "Conéctelo en app/optimizacion/contratos.py, función ejecutar_genetico."
-    )
+    from app.optimizacion.genetico.adaptador import ejecutar
+
+    return ejecutar(red, parametros)
