@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from app.api.dependencias import SesionDB
 from app.schemas.datos import ResumenCasoBase
 from app.schemas.gestion import ResumenImportacion
-from app.services import caso_base_service, importacion_service
+from app.services import caso_base_service, caso_real_service, importacion_service
 
 router = APIRouter(prefix="/datos", tags=["datos"])
 
@@ -17,6 +17,26 @@ TIPO_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 @router.post("/caso-base", response_model=ResumenCasoBase)
 def cargar_caso_base(sesion: SesionDB) -> ResumenCasoBase:
     return caso_base_service.cargar_caso_base(sesion)
+
+
+# Carga del caso real del Meta: EVA 2018, ICA/FNG 2025, DIVIPOLA y rutas OSRM (HU-19)
+@router.post("/caso-real", response_model=ResumenCasoBase)
+def cargar_caso_real(sesion: SesionDB) -> ResumenCasoBase:
+    return caso_real_service.cargar_caso_real(sesion)
+
+
+# Fuentes y coeficientes del caso real, para mostrarlos en la interfaz y el informe
+@router.get("/caso-real/fuentes")
+def fuentes_caso_real() -> dict:
+    caso = caso_real_service.leer_caso_real()
+    return {
+        "descripcion": caso["descripcion"],
+        "coeficientes": caso["coeficientes"],
+        "empresas": [
+            {"codigo": e["codigo"], "municipio": e["municipio"], **e["fuente_dato"]}
+            for e in caso["empresas"]
+        ],
+    }
 
 
 # Exportación de la red a Excel (HU-05)

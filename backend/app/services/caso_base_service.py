@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.models import TipoNodo
 from app.repositories import nodo_repository, ruta_repository
 from app.schemas.datos import ResumenCasoBase
+from app.services import caso_real_service
 from app.services.caso_base_datos import DISTANCIAS_KM, EMPRESAS, ORDEN_PLANTAS, PLANTAS
 
 
@@ -52,13 +53,15 @@ def cargar_caso_base(sesion: Session) -> ResumenCasoBase:
         ids_empresas = cargar_empresas(sesion)
         ids_plantas = cargar_plantas(sesion)
         cargar_rutas(sesion, ids_empresas, ids_plantas)
+        ids = {**ids_empresas, **ids_plantas}
+        sesion.flush()
+        caso_real_service.completar_geometrias_caso_base(sesion, ids)
+        caso_real_service.activar_solo(sesion, set(ids))
         sesion.commit()
     except Exception:
         sesion.rollback()
         raise
 
     return ResumenCasoBase(
-        empresas=nodo_repository.contar_nodos_por_tipo(sesion, TipoNodo.FUENTE),
-        plantas=nodo_repository.contar_nodos_por_tipo(sesion, TipoNodo.PLANTA),
-        rutas=ruta_repository.contar_rutas(sesion),
+        empresas=len(EMPRESAS), plantas=len(PLANTAS), rutas=len(EMPRESAS) * len(PLANTAS)
     )
