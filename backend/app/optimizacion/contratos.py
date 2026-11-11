@@ -52,10 +52,9 @@ class ResultadoGenetico:
 
 # Punto de conexión del modelo exacto: aquí se llama a la implementación del equipo
 def resolver_exacto(red: RedLogistica) -> ResultadoExacto:
-    raise NotImplementedError(
-        "El modelo exacto (HU-07) todavía no está implementado. "
-        "Conéctelo en app/optimizacion/contratos.py, función resolver_exacto."
-    )
+    from app.optimizacion.exacto.modelo_transporte import ModeloTransporte
+
+    return ResultadoExacto(**ModeloTransporte(red).resolver())
 
 
 # Punto de conexión del Algoritmo Genético: aquí se llama a la implementación del equipo

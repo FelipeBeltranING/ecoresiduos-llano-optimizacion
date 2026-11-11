@@ -1,5 +1,5 @@
 import numpy as np
-import verificar_balanceo.py
+from app.optimizacion.exacto.verificar_balanceo import verificar_balanceo
 def vogel(costos, oferta, demanda):
     """
     Obtiene una solución inicial factible usando el Método de Aproximación

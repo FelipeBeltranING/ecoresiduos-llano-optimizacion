@@ -5,7 +5,6 @@ from app.optimizacion.contratos import ESTADO_OPTIMO, resolver_exacto
 from app.optimizacion.red import CODIGO_PLANTA_FICTICIA, ValidadorRed, preparar_red_para_motor
 from tests.utilidades import PENALIZACION_FICTICIA, Z_OPTIMO_CASO_BASE, construir_red_caso_base
 
-PENDIENTE = pytest.mark.skip(reason="pendiente: modelo exacto HU-07")
 TOLERANCIA = 1e-6
 
 
@@ -17,7 +16,6 @@ def resolver_caso_base(factor_oferta: float = 1.0):
     return red_motor, resolver_exacto(red_motor)
 
 
-@PENDIENTE
 def test_estado_optimo_y_costo_del_caso_base() -> None:
     _, resultado = resolver_caso_base()
 
@@ -25,7 +23,6 @@ def test_estado_optimo_y_costo_del_caso_base() -> None:
     assert resultado.costo_total == pytest.approx(Z_OPTIMO_CASO_BASE)
 
 
-@PENDIENTE
 def test_once_rutas_con_flujo() -> None:
     _, resultado = resolver_caso_base()
 
@@ -33,21 +30,18 @@ def test_once_rutas_con_flujo() -> None:
     assert rutas_con_flujo == 11
 
 
-@PENDIENTE
 def test_duales_de_capacidad() -> None:
     _, resultado = resolver_caso_base()
 
     assert resultado.duales_capacidad == pytest.approx([-17750, -14250, 0, 0])
 
 
-@PENDIENTE
 def test_holguras_de_capacidad() -> None:
     _, resultado = resolver_caso_base()
 
     assert resultado.holguras == pytest.approx([0, 0, 5, 55], abs=TOLERANCIA)
 
 
-@PENDIENTE
 def test_cero_violaciones() -> None:
     red, resultado = resolver_caso_base()
 
@@ -61,7 +55,6 @@ def test_cero_violaciones() -> None:
     assert resultado.flujos.min() >= -TOLERANCIA
 
 
-@PENDIENTE
 def test_oferta_mas_diez_por_ciento_usa_planta_ficticia() -> None:
     red, resultado = resolver_caso_base(factor_oferta=1.1)
 

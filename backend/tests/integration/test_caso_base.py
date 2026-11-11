@@ -20,9 +20,7 @@ def test_carga_el_caso_base(cliente_pruebas: TestClient, sesion_pruebas: Session
 
 
 # Cargarlo dos veces no duplica registros
-def test_cargar_dos_veces_no_duplica(
-    cliente_pruebas: TestClient, sesion_pruebas: Session
-) -> None:
+def test_cargar_dos_veces_no_duplica(cliente_pruebas: TestClient, sesion_pruebas: Session) -> None:
     cliente_pruebas.post("/api/v1/datos/caso-base")
     respuesta = cliente_pruebas.post("/api/v1/datos/caso-base")
 
