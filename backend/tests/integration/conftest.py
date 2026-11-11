@@ -4,10 +4,13 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
+from app.db.session import get_db
+from app.main import app
 
 CARPETA_BACKEND = Path(__file__).resolve().parents[2]
 
@@ -53,3 +56,21 @@ def sesion_pruebas(motor_pruebas: Engine) -> Iterator[Session]:
     finally:
         sesion.rollback()
         sesion.close()
+
+
+# Cliente de la API que usa la base de pruebas
+@pytest.fixture
+def cliente_pruebas(motor_pruebas: Engine) -> Iterator[TestClient]:
+    fabrica = sessionmaker(bind=motor_pruebas, autoflush=False, expire_on_commit=False)
+
+    def obtener_sesion_pruebas() -> Iterator[Session]:
+        sesion = fabrica()
+        try:
+            yield sesion
+        finally:
+            sesion.close()
+
+    app.dependency_overrides[get_db] = obtener_sesion_pruebas
+    with TestClient(app) as cliente:
+        yield cliente
+    app.dependency_overrides.clear()
