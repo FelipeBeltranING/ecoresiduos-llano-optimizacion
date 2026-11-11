@@ -245,22 +245,9 @@ ecoresiduos-llano-optimizacion/
 
 ## 11. Instalación y ejecución
 
-**Requisitos:** Git, Python 3.12, Node.js 20 y Docker (opcional, recomendado).
+**Requisitos:** Git, Python 3.12, Node.js 20 y un proyecto de Supabase (PostgreSQL 15).
 
-### Opción A: Docker Compose (todo en local)
-
-```bash
-git clone https://github.com/FelipeBeltranING/ecoresiduos-llano-optimizacion.git
-cd ecoresiduos-llano-optimizacion
-docker compose up --build
-```
-
-- API: http://localhost:8000 · Documentación Swagger: http://localhost:8000/docs
-- Frontend: http://localhost:5173
-
-### Opción B: ejecución manual
-
-**Backend**
+**Backend** (API en http://localhost:8000 · Swagger en http://localhost:8000/docs)
 
 ```bash
 cd backend
@@ -271,7 +258,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -e ".[dev]"
-cp .env.example .env            # completar DATABASE_URL (Supabase o PostgreSQL local)
+cp .env.example .env            # completar DATABASE_URL con el Session pooler de Supabase (puerto 5432)
 alembic upgrade head            # crear las tablas
 uvicorn app.main:app --reload   # http://localhost:8000
 ```
@@ -296,10 +283,11 @@ curl -X POST http://localhost:8000/api/v1/datos/caso-base
 | Variable | Dónde | Ejemplo |
 |---|---|---|
 | `DATABASE_URL` | backend | `postgresql+psycopg://postgres.<proyecto>:<clave>@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require` |
+| `TEST_DATABASE_URL` | backend (solo pruebas de integración; nunca Supabase) | `postgresql+psycopg://postgres:postgres@localhost:5432/ecoresiduos_test` |
 | `CORS_ORIGINS` | backend | `http://localhost:5173,https://ecoresiduos-orion.vercel.app` |
 | `VITE_API_URL` | frontend | `http://localhost:8000/api/v1` |
 
-> Las credenciales de Supabase solo van en el backend. El archivo `.env` **no** se sube al repositorio.
+> Las credenciales de Supabase solo van en `backend/.env`, que **no** se sube al repositorio. Use el Session pooler (puerto 5432), no el Transaction pooler (6543): rompe los prepared statements de psycopg 3.
 
 ## 12. Base de datos y migraciones
 
@@ -361,6 +349,7 @@ El caso base del Meta (10 empresas, 4 plantas y 40 rutas) se carga con un clic o
 
 ```bash
 # Backend: unitarias e integración con cobertura
+# (las de integración se saltan si TEST_DATABASE_URL no está definida)
 cd backend && pytest --cov=app
 
 # Frontend: componentes
