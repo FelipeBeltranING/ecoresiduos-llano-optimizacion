@@ -25,5 +25,5 @@ Closes #<!-- número de la issue -->
 - [ ] Interfaz probada a 360, 768 y 1280 px sin errores en la consola (si aplica).
 - [ ] Endpoint documentado en Swagger/OpenAPI (si aplica).
 - [ ] Migración Alembic incluida si cambió el esquema (si aplica).
-- [ ] Docstrings o comentarios donde la lógica no es obvia.
+- [ ] Solo comentarios cortos al inicio de cada sección, sin docstrings.
 - [ ] Sin credenciales ni `.env` en el commit.
