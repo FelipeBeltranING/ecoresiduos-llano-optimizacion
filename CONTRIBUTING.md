@@ -79,7 +79,7 @@ Una historia solo entra al Sprint Planning si cumple **todos** estos puntos:
 - Todos los criterios de aceptación verificados por el PO, con evidencia (captura o video).
 - Interfaz probada a 360, 768 y 1280 px sin errores en la consola.
 - Endpoint documentado en Swagger/OpenAPI; migración Alembic incluida si cambió el esquema.
-- Docstrings y comentarios donde la lógica no es obvia; tarjeta movida a **Hecho**.
+- Solo comentarios cortos al inicio de cada sección, sin docstrings; tarjeta movida a **Hecho**.
 
 ### Sprint
 
