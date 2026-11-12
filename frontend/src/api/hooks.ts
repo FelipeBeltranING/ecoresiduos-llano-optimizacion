@@ -5,6 +5,7 @@ import type {
   Ajuste,
   Analisis,
   AnalisisResumen,
+  Criticidad,
   EjecucionCreada,
   EjecucionDetalle,
   Escenario,
@@ -48,9 +49,14 @@ function useInvalidarRed() {
   const cliente = useQueryClient();
   return () =>
     Promise.all(
-      [claves.nodos, claves.matriz, claves.parametros, claves.validacion, ["tornado"]].map(
-        (queryKey) => cliente.invalidateQueries({ queryKey }),
-      ),
+      [
+        claves.nodos,
+        claves.matriz,
+        claves.parametros,
+        claves.validacion,
+        ["tornado"],
+        ["criticidad"],
+      ].map((queryKey) => cliente.invalidateQueries({ queryKey })),
     );
 }
 
@@ -123,7 +129,8 @@ export function useActualizarParametro() {
 export function useCargarCaso() {
   const invalidar = useInvalidarRed();
   return useMutation({
-    mutationFn: (caso: "caso-base" | "caso-real") => post<ResumenCaso>(`/datos/${caso}`),
+    mutationFn: (caso: "caso-base" | "caso-real" | "acopios") =>
+      post<ResumenCaso>(`/datos/${caso}`),
     onSuccess: invalidar,
   });
 }
@@ -204,6 +211,15 @@ export function useCalcularRangos() {
       cliente.invalidateQueries({ queryKey: claves.ejecucion(rangos.ejecucion_id) }),
   });
 }
+
+// ---------- Criticidad estructural (ICE, HU-20) ----------
+
+export const useCriticidad = (alfa: number, beta: number, gamma: number) =>
+  useQuery({
+    queryKey: ["criticidad", alfa, beta, gamma],
+    queryFn: () => get<Criticidad>("/criticidad", { alfa, beta, gamma }),
+    placeholderData: (anterior) => anterior,
+  });
 
 // ---------- Sensibilidad ----------
 

@@ -287,3 +287,31 @@ export interface AnalisisResumen {
   escenario_id: string | null;
   creado_en: string;
 }
+
+export interface CriticidadNodo {
+  codigo: string;
+  nombre: string | null;
+  tipo: "PLANTA" | "ACOPIO";
+  intermediacion: number;
+  grado_entrada: number;
+  resiliencia: number;
+  mecanismos: Record<string, boolean>;
+  ice: number;
+  ranking_ice: number;
+  delta_costo_pct: number;
+  toneladas_sin_planta: number;
+  ranking_impacto: number;
+}
+
+export interface Criticidad {
+  alfa: number;
+  beta: number;
+  gamma: number;
+  costo_base: number;
+  nodos: CriticidadNodo[];
+  spearman: number | null;
+  pesos_calibrados: number[] | null;
+  spearman_calibrado: number | null;
+  notas: string[];
+  referencia: string;
+}

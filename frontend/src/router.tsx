@@ -8,6 +8,7 @@ import { HistorialPage } from "@/pages/HistorialPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { PanelPage } from "@/pages/PanelPage";
 import { RedPage } from "@/pages/RedPage";
+import { RiesgoPage } from "@/pages/RiesgoPage";
 import { RutasPage } from "@/pages/RutasPage";
 import { SensibilidadPage } from "@/pages/SensibilidadPage";
 
@@ -22,6 +23,7 @@ export const routes: RouteObject[] = [
       { path: "exacto", element: <ExactoPage /> },
       { path: "ag", element: <GeneticoPage /> },
       { path: "sensibilidad", element: <SensibilidadPage /> },
+      { path: "riesgo", element: <RiesgoPage /> },
       { path: "comparativo", element: <ComparativoPage /> },
       { path: "historial", element: <HistorialPage /> },
       { path: "*", element: <NotFoundPage /> },

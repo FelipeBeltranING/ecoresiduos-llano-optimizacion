@@ -5,6 +5,7 @@ import {
   History,
   LayoutGrid,
   Route as RouteIcon,
+  ShieldAlert,
   Sprout,
   Target,
   type LucideIcon,
@@ -63,6 +64,13 @@ export const allNavItems: NavItem[] = [
     shortLabel: "Sensib.",
     description: "Escenarios, precios sombra y rangos",
     icon: FlaskConical,
+  },
+  {
+    to: "/riesgo",
+    label: "Riesgo",
+    shortLabel: "Riesgo",
+    description: "Criticidad estructural (ICE) de plantas y acopios",
+    icon: ShieldAlert,
   },
   {
     to: "/comparativo",

@@ -22,6 +22,7 @@ import {
   activos,
   descargar,
   formatoFecha,
+  usoDeAcopios,
   usoDePlantas,
   valorSensibilidad,
   ejecucionVigente,
@@ -39,9 +40,15 @@ export function ExactoPage() {
   const empresas = nodosActivos.filter((n) => n.tipo === "FUENTE");
   const plantas = nodosActivos.filter((n) => n.tipo === "PLANTA");
   const flujos = detalle?.flujos ?? [];
-  const uso = usoDePlantas(nodosActivos, flujos);
+  const uso = { ...usoDePlantas(nodosActivos, flujos), ...usoDeAcopios(nodosActivos, flujos) };
+  // Columnas: plantas, centros de acopio con flujo (empresa → acopio) y planta ficticia
+  const acopios = nodosActivos
+    .filter((n) => n.tipo === "ACOPIO" && flujos.some((f) => f.destino === n.codigo))
+    .map((n) => n.codigo);
+  const esAcopio = (codigo: string) => acopios.includes(codigo);
   const columnas = [
     ...plantas.map((p) => p.codigo),
+    ...acopios,
     ...(flujos.some((f) => f.destino === CODIGO_FICTICIA) ? [CODIGO_FICTICIA] : []),
   ];
   const costoPorPlanta = columnas.map((codigo) => ({
@@ -161,7 +168,7 @@ export function ExactoPage() {
                         <th className="w-[220px]">Empresa</th>
                         {columnas.map((c) => (
                           <th key={c} className="text-right">
-                            {c === CODIGO_FICTICIA ? "Ficticia" : c}
+                            {c === CODIGO_FICTICIA ? "Ficticia" : esAcopio(c) ? `vía ${c}` : c}
                           </th>
                         ))}
                       </tr>
@@ -185,7 +192,9 @@ export function ExactoPage() {
                                   flujo
                                     ? c === CODIGO_FICTICIA
                                       ? "bg-danger-soft font-semibold"
-                                      : "bg-primary-soft font-semibold"
+                                      : esAcopio(c)
+                                        ? "bg-[#dbeafe] font-semibold"
+                                        : "bg-primary-soft font-semibold"
                                     : "text-muted",
                                 ].join(" ")}
                               >
