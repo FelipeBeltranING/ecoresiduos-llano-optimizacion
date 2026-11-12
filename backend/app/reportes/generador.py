@@ -221,6 +221,7 @@ def pdf_analisis(analisis: AnalisisSalida) -> bytes:
                     ["Métrica", "Modelo exacto", "Algoritmo Genético"],
                     ["Costo (COP/semana)", cop(exacto.get("costo")), cop(ag.get("mejor"))],
                     ["Costo promedio AG", "—", cop(ag.get("promedio"))],
+                    ["Peor costo AG", "—", cop(ag.get("peor"))],
                     ["Desviación estándar AG", "—", cop(ag.get("desviacion"))],
                     ["Gap mejor (%)", "0", num(ag.get("gap_mejor"), 4)],
                     ["Gap promedio (%)", "0", num(ag.get("gap_promedio"), 4)],
@@ -251,6 +252,36 @@ def pdf_analisis(analisis: AnalisisSalida) -> bytes:
                 ]
             )
         contenido.append(_tabla(filas))
+        escenarios = resultado.get("filas") or []
+        if len(escenarios) > 1:
+            contenido += [
+                Spacer(1, 0.4 * cm),
+                Paragraph("Comparación por escenario", estilos["Heading2"]),
+            ]
+            tabla = [
+                [
+                    "Escenario",
+                    "Z*",
+                    "Z AG",
+                    "Gap (%)",
+                    "T. exacto (ms)",
+                    "T. AG (ms)",
+                    "Cambio asig. (%)",
+                ]
+            ]
+            for fila in escenarios:
+                tabla.append(
+                    [
+                        fila["nombre"],
+                        cop(fila["z_exacto"]),
+                        cop(fila["z_ag"]),
+                        num(fila["gap"], 4),
+                        num(fila["tiempo_exacto_ms"]),
+                        num(fila["tiempo_ag_ms"]),
+                        num(fila["cambio_asignacion"], 2),
+                    ]
+                )
+            contenido.append(_tabla(tabla))
         puntos = [
             (p["generacion"], p["mejor"], p["promedio"]) for p in ag.get("convergencia_mejor", [])
         ]
@@ -289,6 +320,7 @@ def excel_analisis(analisis: AnalisisSalida) -> bytes:
                 ["Métrica", "Modelo exacto", "Algoritmo Genético"],
                 ["Costo (COP/semana)", exacto.get("costo"), ag.get("mejor")],
                 ["Costo promedio AG", None, ag.get("promedio")],
+                ["Peor costo AG", None, ag.get("peor")],
                 ["Desviación estándar AG", None, ag.get("desviacion")],
                 ["Gap mejor (%)", 0, ag.get("gap_mejor")],
                 ["Gap promedio (%)", 0, ag.get("gap_promedio")],
@@ -319,6 +351,35 @@ def excel_analisis(analisis: AnalisisSalida) -> bytes:
             + [
                 [p["generacion"], p["mejor"], p["promedio"]]
                 for p in ag.get("convergencia_mejor", [])
+            ],
+        )
+        _hoja(
+            libro,
+            "Escenarios",
+            [
+                [
+                    "Escenario",
+                    "Escenario id",
+                    "Z* exacto",
+                    "Z AG",
+                    "Gap (%)",
+                    "Tiempo exacto (ms)",
+                    "Tiempo AG (ms)",
+                    "Cambio de asignación (%)",
+                ]
+            ]
+            + [
+                [
+                    f["nombre"],
+                    f["escenario_id"],
+                    f["z_exacto"],
+                    f["z_ag"],
+                    f["gap"],
+                    f["tiempo_exacto_ms"],
+                    f["tiempo_ag_ms"],
+                    f["cambio_asignacion"],
+                ]
+                for f in resultado.get("filas", [])
             ],
         )
     else:
