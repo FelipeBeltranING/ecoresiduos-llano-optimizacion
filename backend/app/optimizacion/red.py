@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, replace
 
 import numpy as np
 
@@ -17,6 +17,14 @@ class DatosPlanta:
     codigo: str
     capacidad: float
     costo_operacion: float
+
+
+# Centro de acopio: nodo de paso con capacidad y costo de manejo por tonelada (HU-17)
+@dataclass
+class DatosAcopio:
+    codigo: str
+    capacidad: float
+    costo_manejo: float = 0.0
 
 
 @dataclass
@@ -39,6 +47,21 @@ class RedLogistica:
     rutas_habilitadas: np.ndarray
     # Costo de operación por planta (o_j); permite separar el componente de transporte
     costo_operacion: np.ndarray | None = None
+    # Centros de acopio (HU-17): arcos empresa → acopio y acopio → planta
+    codigos_acopios: list[str] = field(default_factory=list)
+    capacidad_acopios: np.ndarray | None = None
+    # Costo de manejo por acopio (h_t); ya está sumado en costos_a_acopio
+    costo_manejo: np.ndarray | None = None
+    costos_a_acopio: np.ndarray | None = None
+    rutas_a_acopio: np.ndarray | None = None
+    costos_desde_acopio: np.ndarray | None = None
+    rutas_desde_acopio: np.ndarray | None = None
+
+    def numero_acopios(self) -> int:
+        return len(self.codigos_acopios)
+
+    def tiene_acopios(self) -> bool:
+        return self.numero_acopios() > 0
 
     def numero_empresas(self) -> int:
         return len(self.codigos_empresas)
@@ -71,6 +94,7 @@ def construir_red(
     plantas: list[DatosPlanta],
     rutas: list[DatosRuta],
     costo_km_global: float,
+    acopios: list[DatosAcopio] | None = None,
 ) -> RedLogistica:
     codigos_empresas = []
     oferta = []
@@ -103,7 +127,7 @@ def construir_red(
         )
         rutas_habilitadas[fila, columna] = True
 
-    return RedLogistica(
+    red = RedLogistica(
         codigos_empresas=codigos_empresas,
         codigos_plantas=codigos_plantas,
         oferta=np.array(oferta, dtype=float),
@@ -112,6 +136,56 @@ def construir_red(
         rutas_habilitadas=rutas_habilitadas,
         costo_operacion=np.array([costo_operacion[c] for c in codigos_plantas], dtype=float),
     )
+    if acopios:
+        agregar_acopios(red, acopios, rutas, costo_km_global)
+    return red
+
+
+# Arcos empresa → acopio (transporte + manejo) y acopio → planta (transporte + operación)
+def agregar_acopios(
+    red: RedLogistica, acopios: list[DatosAcopio], rutas: list[DatosRuta], costo_km_global: float
+) -> None:
+    codigos = [acopio.codigo for acopio in acopios]
+    manejo = np.array([acopio.costo_manejo for acopio in acopios], dtype=float)
+    m, n, t = red.numero_empresas(), red.numero_plantas(), len(codigos)
+
+    red.codigos_acopios = codigos
+    red.capacidad_acopios = np.array([acopio.capacidad for acopio in acopios], dtype=float)
+    red.costo_manejo = manejo
+    red.costos_a_acopio = np.zeros((m, t))
+    red.rutas_a_acopio = np.zeros((m, t), dtype=bool)
+    red.costos_desde_acopio = np.zeros((t, n))
+    red.rutas_desde_acopio = np.zeros((t, n), dtype=bool)
+
+    for ruta in rutas:
+        if not ruta.habilitada or ruta.distancia_km is None:
+            continue
+        if ruta.origen in red.codigos_empresas and ruta.destino in codigos:
+            fila = red.codigos_empresas.index(ruta.origen)
+            columna = codigos.index(ruta.destino)
+            red.costos_a_acopio[fila, columna] = calcular_costo_unitario(
+                ruta.distancia_km, ruta.costo_km_t, costo_km_global, manejo[columna]
+            )
+            red.rutas_a_acopio[fila, columna] = True
+        elif ruta.origen in codigos and ruta.destino in red.codigos_plantas:
+            fila = codigos.index(ruta.origen)
+            columna = red.codigos_plantas.index(ruta.destino)
+            red.costos_desde_acopio[fila, columna] = calcular_costo_unitario(
+                ruta.distancia_km, ruta.costo_km_t, costo_km_global, red.costo_operacion[columna]
+            )
+            red.rutas_desde_acopio[fila, columna] = True
+
+
+# Copia independiente de la red (los arreglos no se comparten)
+def copiar_red(red: RedLogistica) -> RedLogistica:
+    cambios = {}
+    for campo in fields(red):
+        valor = getattr(red, campo.name)
+        if isinstance(valor, np.ndarray):
+            cambios[campo.name] = valor.copy()
+        elif isinstance(valor, list):
+            cambios[campo.name] = list(valor)
+    return replace(red, **cambios)
 
 
 # Red con una planta ficticia que recibe el residuo que no cabe en las plantas reales
@@ -120,23 +194,21 @@ def agregar_planta_ficticia(
 ) -> RedLogistica:
     m = red.numero_empresas()
 
-    columna_costos = np.full((m, 1), penalizacion)
-    columna_habilitada = np.ones((m, 1), dtype=bool)
-
-    codigos_plantas = list(red.codigos_plantas)
-    codigos_plantas.append(CODIGO_PLANTA_FICTICIA)
-
-    return RedLogistica(
-        codigos_empresas=list(red.codigos_empresas),
-        codigos_plantas=codigos_plantas,
-        oferta=red.oferta.copy(),
-        capacidad=np.append(red.capacidad, capacidad_ficticia),
-        costos=np.hstack([red.costos, columna_costos]),
-        rutas_habilitadas=np.hstack([red.rutas_habilitadas, columna_habilitada]),
-        costo_operacion=None
-        if red.costo_operacion is None
-        else np.append(red.costo_operacion, penalizacion),
-    )
+    nueva = copiar_red(red)
+    nueva.codigos_plantas.append(CODIGO_PLANTA_FICTICIA)
+    nueva.capacidad = np.append(red.capacidad, capacidad_ficticia)
+    nueva.costos = np.hstack([red.costos, np.full((m, 1), penalizacion)])
+    nueva.rutas_habilitadas = np.hstack([red.rutas_habilitadas, np.ones((m, 1), dtype=bool)])
+    if red.costo_operacion is not None:
+        nueva.costo_operacion = np.append(red.costo_operacion, penalizacion)
+    if red.tiene_acopios():
+        # Los acopios no envían a la planta ficticia
+        t = red.numero_acopios()
+        nueva.costos_desde_acopio = np.hstack([red.costos_desde_acopio, np.zeros((t, 1))])
+        nueva.rutas_desde_acopio = np.hstack(
+            [red.rutas_desde_acopio, np.zeros((t, 1), dtype=bool)]
+        )
+    return nueva
 
 
 # Resultado de validar la red
@@ -163,10 +235,17 @@ class ValidadorRed:
     def buscar_nodos_aislados(self, red: RedLogistica) -> list[str]:
         aislados = []
         for fila, codigo in enumerate(red.codigos_empresas):
-            rutas_de_la_empresa = red.rutas_habilitadas[fila, :]
-            if not rutas_de_la_empresa.any():
+            tiene_ruta_directa = red.rutas_habilitadas[fila, :].any()
+            if not tiene_ruta_directa and not self.llega_por_acopio(red, fila):
                 aislados.append(codigo)
         return aislados
+
+    # ¿La empresa llega a alguna planta pasando por un acopio?
+    def llega_por_acopio(self, red: RedLogistica, fila: int) -> bool:
+        for acopio in range(red.numero_acopios()):
+            if red.rutas_a_acopio[fila, acopio] and red.rutas_desde_acopio[acopio, :].any():
+                return True
+        return False
 
     def validar(self, red: RedLogistica) -> ResultadoValidacion:
         oferta_total = float(red.oferta.sum())

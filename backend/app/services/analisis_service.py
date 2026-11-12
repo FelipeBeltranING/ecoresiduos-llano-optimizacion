@@ -130,7 +130,7 @@ def ejecutar_comparacion(motor: Engine, analisis_id: uuid.UUID, entrada: dict) -
                 resultado = contratos.ejecutar_genetico(
                     red, replace(parametros, semilla=semilla_base + k)
                 )
-                violaciones = verificar_solucion(red, resultado.flujos).total
+                violaciones = ejecucion_service.violaciones_de(red, resultado)
                 corridas.append(
                     {
                         "semilla": semilla_base + k,
@@ -184,6 +184,7 @@ def ejecutar_comparacion(motor: Engine, analisis_id: uuid.UUID, entrada: dict) -
                 "red": {
                     "empresas": red.numero_empresas(),
                     "plantas": red.numero_plantas(),
+                    "acopios": red.numero_acopios(),
                     "usa_planta_ficticia": red.tiene_planta_ficticia(),
                 },
             }

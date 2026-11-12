@@ -39,7 +39,7 @@ def guardar_ruta_completa(sesion: Session, origen_id, destino_id, datos: dict) -
         "origen_id": origen_id,
         "destino_id": destino_id,
         "distancia_km": datos["distancia_km"],
-        "costo_km_t": None,
+        "costo_km_t": datos.get("costo_km_t"),
         "habilitada": True,
         "geometria": datos.get("geometria"),
         "duracion_min": datos.get("duracion_min"),

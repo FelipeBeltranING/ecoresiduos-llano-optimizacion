@@ -18,6 +18,11 @@ class ResultadoExacto:
     costos_reducidos: np.ndarray
     holguras: np.ndarray
     tiempo_ms: float
+    # Solo con centros de acopio (HU-17): flujos por arco, duales y holguras de los acopios
+    flujos_a_acopio: np.ndarray | None = None
+    flujos_desde_acopio: np.ndarray | None = None
+    duales_acopio: np.ndarray | None = None
+    holguras_acopio: np.ndarray | None = None
 
 
 # Parámetros del Algoritmo Genético (HU-09)
@@ -50,6 +55,8 @@ class ResultadoGenetico:
     violaciones: float
     convergencia: list[RegistroConvergencia] = field(default_factory=list)
     tiempo_ms: float = 0.0
+    flujos_a_acopio: np.ndarray | None = None
+    flujos_desde_acopio: np.ndarray | None = None
 
 
 # Punto de conexión del modelo exacto: aquí se llama a la implementación del equipo

@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import Response
 
 from app.api.dependencias import SesionDB
-from app.schemas.datos import ResumenCasoBase
+from app.schemas.datos import ResumenAcopios, ResumenCasoBase
 from app.schemas.gestion import ResumenImportacion
 from app.services import caso_base_service, caso_real_service, importacion_service
 
@@ -17,6 +17,12 @@ TIPO_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 @router.post("/caso-base", response_model=ResumenCasoBase)
 def cargar_caso_base(sesion: SesionDB) -> ResumenCasoBase:
     return caso_base_service.cargar_caso_base(sesion)
+
+
+# Centros de acopio de Puerto López y San Martín sobre la red activa (HU-17)
+@router.post("/acopios", response_model=ResumenAcopios)
+def cargar_acopios(sesion: SesionDB) -> ResumenAcopios:
+    return caso_base_service.cargar_acopios(sesion)
 
 
 # Carga del caso real del Meta: EVA 2018, ICA/FNG 2025, DIVIPOLA y rutas OSRM (HU-19)

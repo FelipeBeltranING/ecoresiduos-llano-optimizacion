@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 
+from app.optimizacion.caminos import caminos_a_arcos, construir_caminos
 from app.optimizacion.contratos import ParametrosAG, RegistroConvergencia, ResultadoGenetico
 from app.optimizacion.genetico.algoritmo import (
     EvaluadorAG,
@@ -17,10 +18,16 @@ def ejecutar(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGenetico:
     inicio = time.perf_counter()
     semilla = parametros.semilla
     habilitadas = red.rutas_habilitadas
+    costos, capacidad, recursos = red.costos, red.capacidad, None
+    if red.tiene_acopios():
+        # Cromosoma empresa × camino (directo o pasando por un acopio), HU-17
+        caminos = construir_caminos(red)
+        costos, habilitadas = caminos.costos, caminos.habilitadas
+        capacidad, recursos = caminos.capacidad_recursos, caminos.recursos
 
-    inicializador = InicializadorAG(red.oferta, red.capacidad, red.costos, semilla, habilitadas)
+    inicializador = InicializadorAG(red.oferta, capacidad, costos, semilla, habilitadas, recursos)
     evaluador = EvaluadorAG(
-        red.oferta, red.capacidad, red.costos, parametros.lambda_pen, habilitadas
+        red.oferta, capacidad, costos, parametros.lambda_pen, habilitadas, recursos
     )
     # Semilla distinta para los operadores, pero derivada de la misma (reproducible)
     semilla_operadores = None if semilla is None else semilla + 1
@@ -42,10 +49,13 @@ def ejecutar(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGenetico:
         RegistroConvergencia(generacion=g, mejor_costo=mejor_costo, costo_promedio=promedio)
         for g, mejor_costo, promedio in motor.historial
     ]
+    arcos = caminos_a_arcos(red, np.array(mejor.cromosoma, dtype=float))
     return ResultadoGenetico(
         costo_total=float(mejor.costo_total),
-        flujos=np.array(mejor.cromosoma, dtype=float),
+        flujos=arcos.directos,
         violaciones=float(mejor.violaciones),
         convergencia=convergencia,
         tiempo_ms=tiempo_ms,
+        flujos_a_acopio=arcos.a_acopio,
+        flujos_desde_acopio=arcos.desde_acopio,
     )

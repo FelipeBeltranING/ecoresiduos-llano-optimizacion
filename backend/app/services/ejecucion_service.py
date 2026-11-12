@@ -58,9 +58,19 @@ def preparar_red(sesion: Session) -> RedLogistica:
     return preparar_red_para_motor(red, validacion)
 
 
+CAMPOS_ACOPIO = (
+    "capacidad_acopios",
+    "costo_manejo",
+    "costos_a_acopio",
+    "rutas_a_acopio",
+    "costos_desde_acopio",
+    "rutas_desde_acopio",
+)
+
+
 # Copia de la red en formato JSON para guardar con la ejecución
 def snapshot_de_red(red: RedLogistica) -> dict:
-    return {
+    snapshot = {
         "empresas": red.codigos_empresas,
         "plantas": red.codigos_plantas,
         "oferta": red.oferta.tolist(),
@@ -69,11 +79,22 @@ def snapshot_de_red(red: RedLogistica) -> dict:
         "rutas_habilitadas": red.rutas_habilitadas.tolist(),
         "costo_operacion": None if red.costo_operacion is None else red.costo_operacion.tolist(),
     }
+    if red.tiene_acopios():
+        snapshot["acopios"] = red.codigos_acopios
+        for campo in CAMPOS_ACOPIO:
+            snapshot[campo] = getattr(red, campo).tolist()
+    return snapshot
 
 
 # Red reconstruida desde el snapshot guardado con una ejecución
 def red_desde_snapshot(snapshot: dict) -> RedLogistica:
     operacion = snapshot.get("costo_operacion")
+    acopios = {}
+    if snapshot.get("acopios"):
+        acopios["codigos_acopios"] = list(snapshot["acopios"])
+        for campo in CAMPOS_ACOPIO:
+            tipo = bool if campo.startswith("rutas") else float
+            acopios[campo] = np.array(snapshot[campo], dtype=tipo)
     return RedLogistica(
         codigos_empresas=list(snapshot["empresas"]),
         codigos_plantas=list(snapshot["plantas"]),
@@ -82,12 +103,17 @@ def red_desde_snapshot(snapshot: dict) -> RedLogistica:
         costos=np.array(snapshot["costos"], dtype=float),
         rutas_habilitadas=np.array(snapshot["rutas_habilitadas"], dtype=bool),
         costo_operacion=None if operacion is None else np.array(operacion, dtype=float),
+        **acopios,
     )
 
 
-# Guardado de los flujos mayores que cero
-def guardar_flujos(sesion: Session, ejecucion: Ejecucion, red: RedLogistica, flujos) -> None:
+# Guardado de los flujos mayores que cero (con acopios, también empresa → acopio → planta)
+def guardar_flujos(
+    sesion: Session, ejecucion: Ejecucion, red: RedLogistica, flujos, resultado=None
+) -> None:
     ids_nodos = ejecucion_repository.mapa_ids_nodos(sesion)
+    if resultado is not None and red.tiene_acopios() and resultado.flujos_a_acopio is not None:
+        guardar_flujos_de_acopios(sesion, ejecucion, red, resultado, ids_nodos)
     for i, codigo_empresa in enumerate(red.codigos_empresas):
         for j, codigo_planta in enumerate(red.codigos_plantas):
             toneladas = float(flujos[i, j])
@@ -104,6 +130,35 @@ def guardar_flujos(sesion: Session, ejecucion: Ejecucion, red: RedLogistica, flu
                 toneladas,
                 float(red.costos[i, j]),
             )
+
+
+def guardar_flujos_de_acopios(sesion, ejecucion, red: RedLogistica, resultado, ids_nodos) -> None:
+    arcos = (
+        (red.codigos_empresas, red.codigos_acopios, resultado.flujos_a_acopio, red.costos_a_acopio),
+        (red.codigos_acopios, red.codigos_plantas, resultado.flujos_desde_acopio,
+         red.costos_desde_acopio),
+    )
+    for origenes, destinos, flujos, costos in arcos:
+        for a, origen in enumerate(origenes):
+            for b, destino in enumerate(destinos):
+                toneladas = float(flujos[a, b])
+                if toneladas <= UMBRAL_FLUJO or destino == CODIGO_PLANTA_FICTICIA:
+                    continue
+                ejecucion_repository.agregar_flujo(
+                    sesion,
+                    ejecucion.id,
+                    ids_nodos[origen],
+                    ids_nodos[destino],
+                    toneladas,
+                    float(costos[a, b]),
+                )
+
+
+# Violaciones de una solución (incluye conservación y capacidad de los acopios)
+def violaciones_de(red: RedLogistica, resultado) -> float:
+    return verificar_solucion(
+        red, resultado.flujos, resultado.flujos_a_acopio, resultado.flujos_desde_acopio
+    ).total
 
 
 # Guardado de duales, holguras y costos reducidos del modelo exacto
@@ -135,6 +190,21 @@ def guardar_sensibilidad_exacto(
             sesion, ejecucion.id, HOLGURA_CAPACIDAD, holgura, nodo_id=nodo_id
         )
 
+    for t, codigo_acopio in enumerate(red.codigos_acopios):
+        if resultado.duales_acopio is None:
+            break
+        nodo_id = ids_nodos[codigo_acopio]
+        ejecucion_repository.agregar_sensibilidad(
+            sesion, ejecucion.id, DUAL_CAPACIDAD, float(resultado.duales_acopio[t]), nodo_id=nodo_id
+        )
+        ejecucion_repository.agregar_sensibilidad(
+            sesion,
+            ejecucion.id,
+            HOLGURA_CAPACIDAD,
+            float(resultado.holguras_acopio[t]),
+            nodo_id=nodo_id,
+        )
+
     for i, codigo_empresa in enumerate(red.codigos_empresas):
         for j, codigo_planta in enumerate(red.codigos_plantas):
             ruta_id = ids_rutas.get((codigo_empresa, codigo_planta))
@@ -156,7 +226,7 @@ def ejecutar_exacto(
     if red is None:
         red = preparar_red(sesion)
     resultado = contratos.resolver_exacto(red)
-    violaciones = verificar_solucion(red, resultado.flujos).total
+    violaciones = violaciones_de(red, resultado)
 
     try:
         ejecucion = ejecucion_repository.crear_ejecucion(
@@ -170,7 +240,7 @@ def ejecutar_exacto(
             escenario_id=escenario_id,
             violaciones=violaciones,
         )
-        guardar_flujos(sesion, ejecucion, red, resultado.flujos)
+        guardar_flujos(sesion, ejecucion, red, resultado.flujos, resultado)
         guardar_sensibilidad_exacto(sesion, ejecucion, red, resultado)
         sesion.commit()
     except Exception:
@@ -233,7 +303,7 @@ def guardar_genetico(
     resultado: ResultadoGenetico,
     escenario_id: uuid.UUID | None = None,
 ) -> Ejecucion:
-    violaciones = verificar_solucion(red, resultado.flujos).total
+    violaciones = violaciones_de(red, resultado)
 
     try:
         ejecucion = ejecucion_repository.crear_ejecucion(
@@ -247,7 +317,7 @@ def guardar_genetico(
             escenario_id=escenario_id,
             violaciones=violaciones,
         )
-        guardar_flujos(sesion, ejecucion, red, resultado.flujos)
+        guardar_flujos(sesion, ejecucion, red, resultado.flujos, resultado)
         guardar_convergencia(sesion, ejecucion, resultado)
         sesion.commit()
     except Exception:
