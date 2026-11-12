@@ -1,0 +1,282 @@
+% Informe técnico del Proyecto Orion · Optimización 2026-II · Universidad de los Llanos
+% Compilar con pdflatex (Overleaf: plantilla IEEEtran de conferencia). Máximo 8 páginas.
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{url}
+
+\begin{document}
+
+\title{Optimización de la red logística de EcoResiduos del Llano: modelo exacto, algoritmo genético y criticidad estructural}
+
+% TODO(equipo): agregar correos institucionales si el formato los pide.
+\author{\IEEEauthorblockN{David Felipe Beltrán Tabares (Líder)}
+\IEEEauthorblockN{Julián David Báez Parra (Modelado y Optimización)}
+\IEEEauthorblockN{Martín Pineda Jaramillo (Metaheurísticas)}
+\IEEEauthorblockN{Juan David Navarro Bermúdez (Software e Interfaz)}
+\IEEEauthorblockA{Grupo Orion · Optimización 2026-II\\
+Facultad de Ciencias Básicas e Ingeniería, Universidad de los Llanos\\
+Villavicencio, Colombia}}
+
+\maketitle
+
+\begin{abstract}
+EcoResiduos del Llano recoge residuos agroindustriales (palma, arroz, ganadería y forestal) en el
+departamento del Meta y los lleva a plantas de aprovechamiento. La asignación empírica de rutas
+genera sobrecostos. Este trabajo modela la red como un grafo dirigido y resuelve el problema de flujo
+de costo mínimo con dos métodos: un modelo de programación lineal (PuLP + CBC) y un algoritmo genético
+(AG) con reparación de factibilidad. El sistema permite editar la red en línea, analizar escenarios
+de sensibilidad (combustible, oferta y cuellos de botella), obtener precios sombra y rangos de
+estabilidad, y comparar ambos métodos en costo, tiempo y brecha. Además, se incorporan centros de
+acopio como nodos de paso y se adapta el Índice de Criticidad Estructural (ICE) para identificar las
+plantas cuya falla más afecta a la red. En el caso base, el óptimo es de 64\,691\,000~COP por semana,
+el AG lo alcanza con brecha nula, abrir dos acopios ahorra 4{,}5\,\% y el ICE ordena las plantas igual
+que el impacto observado al simular su falla ($\rho = 0{,}80$ en el caso base y $\rho = 1{,}00$ en el
+caso real del Meta).
+\end{abstract}
+
+\begin{IEEEkeywords}
+flujo de costo mínimo, programación lineal, algoritmo genético, análisis de sensibilidad,
+criticidad estructural, logística de residuos.
+\end{IEEEkeywords}
+
+\section{Introducción y problemática}
+La agroindustria del Meta genera cada semana cientos de toneladas de residuos aprovechables: raquis y
+fibra de palma, cascarilla de arroz, estiércol bovino y residuos forestales. EcoResiduos del Llano los
+recoge en las empresas productoras y los lleva a cuatro plantas de procesamiento (Villavicencio,
+Restrepo, Granada y Puerto Gaitán), cada una con capacidad y costo de operación propios. Hoy la
+asignación empresa–planta se hace de forma empírica, lo que satura unas plantas y subutiliza otras.
+
+El objetivo es un sistema que determine la distribución de costo mínimo, que se pueda ampliar con
+nuevas empresas y sedes sin tocar el código y que permita evaluar en vivo qué pasa si sube el
+combustible, crece la oferta o falla una planta. El trabajo cubre las cuatro fases del enunciado:
+formulación (Fase~1), resolución exacta (Fase~2), algoritmo genético (Fase~3) e interfaz con análisis
+de sensibilidad y comparación (Fase~4).
+
+\section{Equipo y roles}
+\begin{table}[h]
+\centering
+\caption{Roles del Grupo Orion}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Rol del enunciado & Responsabilidad principal \\
+\midrule
+Líder & Integración, ICE, informe y sustentación \\
+Modelado y Optimización & Formulación, modelo exacto, duales y rangos \\
+Metaheurísticas & Diseño y calibración del AG \\
+Software e Interfaz & API, interfaz web, mapa y despliegue \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Formulación matemática}
+\subsection{Grafo de la red}
+La red es un grafo dirigido $G=(V,E)$ con $V = O \cup T \cup P$: fuentes (empresas) $O$, centros de
+acopio $T$ (nodos de paso) y plantas $P$. Los arcos son
+$E \subseteq (O\times P) \cup (O\times T) \cup (T\times P)$; solo existen los arcos habilitados.
+
+\subsection{Parámetros y variables}
+$a_i$: oferta semanal de la empresa $i$ (t). $b_j$: capacidad de la planta $j$ (t). $u_t$: capacidad
+del acopio $t$. $d_e$: distancia vial del arco $e$ (km). $k_e$: costo de flete por t·km
+(350~COP por defecto; 200 en el flete consolidado acopio–planta). $o_j$: costo de operación por
+tonelada en la planta $j$. $h_t$: costo de manejo en el acopio $t$. El costo unitario del arco es
+$c_e = k_e d_e + o_{\text{destino}}$ o $c_e = k_e d_e + h_t$ si llega a un acopio. La variable de
+decisión es $x_e \ge 0$, toneladas por el arco $e$.
+
+\subsection{Modelo}
+\begin{align}
+\min\; Z &= \sum_{e\in E} c_e\, x_e \\
+\text{s.a.}\; \sum_{e\in\delta^+(i)} x_e &= a_i && \forall i\in O \\
+\sum_{e\in\delta^-(t)} x_e &= \sum_{e\in\delta^+(t)} x_e && \forall t\in T \\
+\sum_{e\in\delta^-(t)} x_e &\le u_t && \forall t\in T \\
+\sum_{e\in\delta^-(j)} x_e &\le b_j && \forall j\in P \\
+x_e &\ge 0 && \forall e\in E
+\end{align}
+donde $\delta^+(v)$ y $\delta^-(v)$ son los arcos que salen y entran de $v$. Si
+$\sum_i a_i > \sum_j b_j$, se agrega una planta ficticia con capacidad igual al exceso y una
+penalización de $10^6$~COP/t, de modo que el modelo siempre es factible y las toneladas sin planta
+quedan a la vista. Sin acopios ($T=\emptyset$), el modelo se reduce exactamente al problema de
+transporte clásico, que es la prueba de regresión del sistema.
+
+\section{Diseño del algoritmo genético}
+\textbf{Cromosoma.} Una matriz empresa $\times$ camino, donde un camino es $i\to j$ o
+$i\to t\to j$, con costo igual a la suma de sus arcos. Sin acopios, la matriz es la de transporte
+$m\times n$. Cada fila reparte la oferta de una empresa.
+
+\textbf{Población inicial.} El 90\,\% de los individuos reparte la oferta con una distribución de
+Dirichlet sobre los caminos habilitados; el 10\,\% usa la heurística de costo mínimo con desempates
+aleatorios. Esta siembra acelera la convergencia sin fijar la solución.
+
+\textbf{Aptitud.} $f = 1/(Z + \lambda\cdot\mathrm{Pen})$, con $\lambda=10^6$ y $\mathrm{Pen}$ igual a
+la suma de violaciones de oferta y de capacidad (plantas y acopios).
+
+\textbf{Operadores.} Selección por torneo ($k=3$) o ruleta; cruce de uno o dos puntos con cortes
+entre empresas (filas), lo que conserva la oferta de cada fila; mutación por transferencia de una
+fracción aleatoria del flujo entre dos caminos de la misma empresa; elitismo de 2 individuos y parada
+tras 50 generaciones sin mejora. Todos los parámetros se configuran desde la interfaz.
+
+\textbf{Reparación.} Tras cada operador: (1)~se anulan flujos negativos o en rutas cerradas,
+(2)~se reescala cada fila a su oferta y (3)~el exceso de cada recurso saturado (planta o acopio) se
+mueve al camino más barato con cupo, empezando por las empresas que menos pierden. Así, casi todos los
+individuos son factibles y la penalización solo actúa como respaldo.
+
+\section{Arquitectura del sistema}
+El sistema sigue una arquitectura por capas. El backend (FastAPI, Python~3.12) expone una API REST
+con módulos independientes: \emph{red} (estructura y validación), \emph{exacto} (PuLP + CBC),
+\emph{genético}, \emph{sensibilidad} (re-optimización paramétrica con HiGHS~\cite{highs}) y
+\emph{criticidad} (ICE). Los datos persisten en PostgreSQL con migraciones versionadas (Alembic). El
+frontend (React + TypeScript) ofrece pantallas de red, rutas, exacto, genético, sensibilidad, riesgo,
+comparativo e historial, y un mapa real sobre OpenStreetMap~\cite{osm} con trazados viales de
+OSRM~\cite{osrm}. Los reportes se exportan en PDF y Excel. Todo se ejecuta con
+\texttt{docker compose up}; la integración continua corre el lint, las migraciones y las pruebas en
+cada cambio.
+
+\section{Datos de prueba regionales}
+\textbf{Caso base.} 10 empresas (845~t/semana) y 4 plantas (950~t de capacidad) con distancias viales
+estimadas y $k=350$~COP/t·km.
+
+\textbf{Caso real del Meta.} 12 empresas en los municipios de mayor producción, con oferta estimada a
+partir de la Evaluación Agropecuaria Municipal (EVA 2018)~\cite{eva} y del inventario bovino
+ICA/FNG 2025~\cite{ica}, coordenadas DIVIPOLA~\cite{divipola} y distancias reales por carretera de
+OSRM: 919{,}3~t/semana y 48 rutas.
+
+\textbf{Centros de acopio.} Puerto López y San Martín (200~t, $h_t = 8000$~COP/t), sobre las vías
+hacia Puerto Gaitán y Granada, con flete consolidado de 200~COP/t·km hacia las plantas.
+
+\section{Resultados}
+\subsection{Solución óptima}
+En el caso base, $Z^* = 64\,691\,000$~COP/semana (CBC, 30~ms). Villavicencio y Restrepo quedan
+saturadas, con precios sombra de $-17\,750$ y $-14\,250$~COP/t: cada tonelada adicional de capacidad
+en Villavicencio ahorraría 17\,750~COP por semana. Granada (5~t libres) y Puerto Gaitán (55~t) tienen
+precio sombra cero. En el caso real, $Z^* = 59\,295\,262$~COP/semana, sin planta ficticia.
+
+\subsection{Análisis de sensibilidad}
+Cada escenario se re-optimiza con ambos métodos (Tabla~\ref{tab:escenarios}). Un alza del 20\,\% en
+el combustible eleva el costo en 7{,}3\,\%, sin cambiar la asignación. En cambio, un 10\,\% más de
+oferta o una reducción del 30\,\% en Villavicencio superan la capacidad y obligan a usar la planta
+ficticia: allí la capacidad, no el flete, es la restricción dominante. Los rangos de estabilidad se
+calculan por re-optimización paramétrica (búsqueda y bisección), y la gráfica de tornado ordena los
+parámetros por su impacto en $Z$.
+
+\begin{table}[h]
+\centering
+\caption{Escenarios de sensibilidad en el caso base}
+\label{tab:escenarios}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Escenario & $Z^*$ (MCOP) & $\Delta Z$ & Brecha AG \\
+\midrule
+Base & 64{,}69 & --- & 0{,}00\,\% \\
+Combustible +20\,\% & 69{,}39 & +7{,}3\,\% & 0{,}00\,\% \\
+Oferta +10\,\%$^{\dagger}$ & 98{,}35 & +52{,}0\,\% & 0{,}00\,\% \\
+Villavicencio $-30$\,\%$^{\dagger}$ & 93{,}89 & +45{,}1\,\% & 0{,}00\,\% \\
+\bottomrule
+\multicolumn{4}{@{}l}{\footnotesize $^{\dagger}$ Usa la planta ficticia (penalización $10^6$ COP/t).}
+\end{tabular}
+\end{table}
+
+\subsection{Comparativo exacto frente al AG}
+En 10 corridas sobre el caso base (población 100, hasta 300 generaciones), el AG alcanzó el óptimo en
+todas (brecha media $<10^{-7}$\,\%), con un tiempo medio de 1{,}9~s frente a 30~ms del exacto. En
+instancias sintéticas reproducibles del Meta (Tabla~\ref{tab:escala}), la brecha crece con el tamaño y
+el exacto sigue siendo más rápido: para un problema lineal de este tamaño, el método exacto domina. El
+valor del AG está en que tolera extensiones no lineales (costos fijos, economías de escala) sin
+cambiar su estructura.
+
+\begin{table}[h]
+\centering
+\caption{Escalabilidad (semilla 42)}
+\label{tab:escala}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Empresas $\times$ plantas & Exacto (ms) & AG (s) & Brecha AG \\
+\midrule
+$10\times4$ & 51 & 3{,}0 & 0{,}00\,\% \\
+$30\times8$ & 61 & 4{,}0 & 0{,}19\,\% \\
+$50\times10$ & 70 & 8{,}6 & 0{,}48\,\% \\
+$100\times20$ & 216 & 9{,}8 & 0{,}91\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Centros de acopio}
+Con los dos acopios, $Z^*$ baja a 61\,761\,025~COP/semana (ahorro del 4{,}5\,\%): pasan 160~t por
+Puerto López y 85~t por San Martín, ninguno saturado. El AG por caminos llega a una brecha de
+0{,}64\,\% sin violaciones. Si los acopios no tienen cupo, el modelo vuelve exactamente a
+64\,691\,000, lo que confirma que la generalización conserva el modelo original.
+
+\subsection{Criticidad estructural (ICE)}
+Se adaptó el índice de Vega-Linares, Beltrán-Tabares \emph{et al.}~\cite{ice},
+$\mathrm{ICE}(i)=\alpha C_B(i)+\beta C_D^-(i)+\gamma(1-R(i))$, propuesto para dependencias entre
+microservicios. En la red logística: $C_B$ es la fracción del flujo que recibe la planta (en un grafo
+bipartito la intermediación clásica~\cite{freeman} es cero) o, para un acopio, la fracción de pares
+empresa–planta cuyo camino más barato lo atraviesa; $C_D^-$ es la fracción de empresas que dependen
+del nodo; y $R$ es la proporción de cinco mecanismos de mitigación: holgura $\ge 10$\,\%, precio
+sombra cero, capacidad que puede bajar 10\,\% sin cambiar los duales, rutas alternativas a
+$\le 10$\,\% de costo y respaldo por acopio. El fallo se simula cerrando el nodo y re-optimizando.
+
+Con los pesos del artículo ($0{,}5$; $0{,}3$; $0{,}2$), el ranking del caso base es Villavicencio
+(ICE $=0{,}49$; 240~t sin planta al cerrarla) $>$ Granada $>$ Restrepo $>$ Puerto Gaitán, con
+$\rho$ de Spearman~\cite{spearman} de $0{,}80$ frente al impacto observado; en el caso real,
+$\rho = 1{,}00$. Como en el artículo, el término $1-R$ reordena el ranking: Puerto Gaitán recibe casi el
+mismo flujo que Restrepo, pero su holgura y su precio sombra cero lo hacen menos crítico. Una búsqueda
+en malla de los pesos muestra que, en el caso base, la dependencia $C_D^-$ sola explica mejor el
+impacto ($\rho=0{,}95$). Con solo 4 a 6 nodos, estos resultados son evidencia preliminar y no una
+validación concluyente; constituyen la prueba empírica que el artículo dejó como trabajo futuro.
+
+\section{Conclusiones y trabajo futuro}
+El modelo exacto resuelve el problema en milisegundos y entrega la información de gestión más útil:
+qué plantas están saturadas y cuánto vale ampliarlas. El AG, con reparación por recursos, alcanza el
+óptimo en el caso base y se mantiene por debajo del 1\,\% de brecha en instancias de 100 empresas. La
+red es sensible sobre todo a la capacidad: la ampliación de Villavicencio es la inversión prioritaria,
+y los centros de acopio con flete consolidado reducen el costo un 4{,}5\,\%. El ICE identifica la
+misma planta crítica que la simulación de fallas y ofrece una lectura de riesgo comprensible para la
+gerencia.
+
+Como trabajo futuro se propone calibrar el ICE con incidentes reales de la empresa, alimentar con
+estas características una red neuronal de grafos (GAT), como plantea~\cite{ice}, e incorporar costos
+fijos de apertura de acopios, que convierten el problema en uno entero mixto donde el AG gana ventaja.
+
+\section*{Declaración de uso de inteligencia artificial}
+% TODO(equipo): ajustar esta declaración al uso real.
+El equipo usó asistentes de inteligencia artificial como apoyo en la programación, las pruebas y la
+redacción. Todas las formulaciones, resultados y conclusiones fueron revisados y verificados por los
+autores, que asumen la responsabilidad del contenido.
+
+\begin{thebibliography}{99}
+\bibitem{hillier} F.~S. Hillier y G.~J. Lieberman, \emph{Introduction to Operations Research}, 10th ed.
+New York, NY, USA: McGraw-Hill, 2015.
+\bibitem{goldberg} D.~E. Goldberg, \emph{Genetic Algorithms in Search, Optimization, and Machine
+Learning}. Reading, MA, USA: Addison-Wesley, 1989.
+\bibitem{pulp} S.~Mitchell, M.~O'Sullivan e I.~Dunning, ``PuLP: A linear programming toolkit for
+Python,'' Univ. of Auckland, Auckland, New Zealand, 2011.
+\bibitem{cbc} J.~Forrest y R.~Lougee-Heimer, ``CBC user guide,'' en \emph{Emerging Theory, Methods, and
+Applications}, INFORMS, 2005, pp.~257--277.
+\bibitem{highs} Q.~Huangfu y J.~A.~J. Hall, ``Parallelizing the dual revised simplex method,''
+\emph{Math. Program. Comput.}, vol.~10, no.~1, pp.~119--142, 2018.
+\bibitem{ice} L.~A. Vega-Linares, D.~F. Beltrán-Tabares, O.~L. Vega-Márquez y N.~E. Suat-Rojas,
+``Redes neuronales de grafos para resiliencia en microservicios,'' en \emph{Memorias del VI Congreso
+Internacional de Ciencias Básicas e Ingeniería -- CICI 2026}, Rev. Punto de Inflexión, ISSN 3028-6425,
+Universidad de los Llanos, Villavicencio, 2026.
+\bibitem{freeman} L.~C. Freeman, ``A set of measures of centrality based on betweenness,''
+\emph{Sociometry}, vol.~40, no.~1, pp.~35--41, 1977.
+\bibitem{spearman} C.~Spearman, ``The proof and measurement of association between two things,''
+\emph{Amer. J. Psychol.}, vol.~15, no.~1, pp.~72--101, 1904.
+\bibitem{eva} Ministerio de Agricultura y Desarrollo Rural y UPRA, ``Evaluaciones Agropecuarias
+Municipales (EVA),'' 2018. [En línea]. Disponible: datos.gov.co % TODO(equipo): URL exacta
+\bibitem{ica} Instituto Colombiano Agropecuario y FNG, ``Censo pecuario nacional,'' 2025. [En línea].
+Disponible: ica.gov.co % TODO(equipo): URL exacta
+\bibitem{divipola} DANE, ``Codificación de la División Político-Administrativa de Colombia
+(DIVIPOLA),'' 2024. [En línea]. Disponible: dane.gov.co % TODO(equipo): URL exacta
+\bibitem{osrm} D.~Luxen y C.~Vetter, ``Real-time routing with OpenStreetMap data,'' en \emph{Proc.
+19th ACM SIGSPATIAL Int. Conf. Adv. Geographic Inf. Syst.}, 2011, pp.~513--516.
+\bibitem{osm} OpenStreetMap contributors, ``OpenStreetMap,'' 2026. [En línea]. Disponible:
+\url{https://www.openstreetmap.org}
+\end{thebibliography}
+
+\end{document}
