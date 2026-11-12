@@ -1,5 +1,7 @@
 # Guía: conectar el modelo exacto (HU-07)
 
+> **Estado (10 nov 2026): conectado.** La implementación está en `app/optimizacion/exacto/modelo_transporte.py` (PuLP + CBC) y el verificador en `app/optimizacion/verificador.py`. Las pruebas de aceptación de `tests/unit/test_aceptacion_exacto.py` están activas y pasan.
+
 Esta guía explica qué falta para que `POST /api/v1/optimizacion/exacto` deje de responder
 501. Todo lo que está alrededor del modelo ya funciona: construir la red desde la base, validarla,
 agregar la planta ficticia, guardar el resultado y consultarlo. **Solo falta el modelo.**

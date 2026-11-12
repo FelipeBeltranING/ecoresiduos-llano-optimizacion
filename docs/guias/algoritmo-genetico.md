@@ -1,5 +1,7 @@
 # Guía: conectar el Algoritmo Genético (HU-09)
 
+> **Estado (10 nov 2026): conectado.** El adaptador `app/optimizacion/genetico/adaptador.py` lleva la `RedLogistica` al `MotorAG`; el AG admite cruce de uno o dos puntos y selección por torneo o ruleta. Las pruebas de `tests/unit/test_aceptacion_genetico.py` están activas y pasan.
+
 Esta guía explica qué falta para que `POST /api/v1/optimizacion/genetico` deje de responder
 501. La API ya hace todo lo demás:
 

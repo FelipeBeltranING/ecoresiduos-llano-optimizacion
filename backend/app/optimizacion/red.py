@@ -37,6 +37,8 @@ class RedLogistica:
     capacidad: np.ndarray
     costos: np.ndarray
     rutas_habilitadas: np.ndarray
+    # Costo de operación por planta (o_j); permite separar el componente de transporte
+    costo_operacion: np.ndarray | None = None
 
     def numero_empresas(self) -> int:
         return len(self.codigos_empresas)
@@ -108,6 +110,7 @@ def construir_red(
         capacidad=np.array(capacidad, dtype=float),
         costos=costos,
         rutas_habilitadas=rutas_habilitadas,
+        costo_operacion=np.array([costo_operacion[c] for c in codigos_plantas], dtype=float),
     )
 
 
@@ -130,6 +133,9 @@ def agregar_planta_ficticia(
         capacidad=np.append(red.capacidad, capacidad_ficticia),
         costos=np.hstack([red.costos, columna_costos]),
         rutas_habilitadas=np.hstack([red.rutas_habilitadas, columna_habilitada]),
+        costo_operacion=None
+        if red.costo_operacion is None
+        else np.append(red.costo_operacion, penalizacion),
     )
 
 

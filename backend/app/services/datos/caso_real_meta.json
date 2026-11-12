@@ -1,0 +1,572 @@
+{
+ "descripcion": "Caso real del Meta: producción EVA 2018, inventario bovino ICA/FNG 2025, coordenadas DIVIPOLA y distancias viales OSRM sobre OpenStreetMap",
+ "coeficientes": {
+  "tasa_extraccion_aceite": 0.21,
+  "tusa_por_rff": 0.22,
+  "cascarilla_por_paddy": 0.2,
+  "estiercol_kg_dia": 10.0,
+  "captacion": {
+   "PALMA": 0.065,
+   "ARROZ": 0.25,
+   "BOVINO": 0.005
+  }
+ },
+ "empresas": [
+  {
+   "codigo": "R01",
+   "nombre": "Núcleo palmero de Puerto Gaitán",
+   "municipio": "Puerto Gaitán",
+   "tipo_residuo": "Palma (tusa/raquis)",
+   "oferta_t": 145.7,
+   "latitud": 4.314905,
+   "longitud": -72.087649,
+   "fuente_dato": {
+    "produccion": 111246.0,
+    "unidad": "t aceite crudo (EVA 2018)",
+    "residuo_anual_t": 116543.4,
+    "captacion": 0.065
+   }
+  },
+  {
+   "codigo": "R02",
+   "nombre": "Núcleo palmero de San Carlos de Guaroa",
+   "municipio": "San Carlos de Guaroa",
+   "tipo_residuo": "Palma (tusa/raquis)",
+   "oferta_t": 130.5,
+   "latitud": 3.71065,
+   "longitud": -73.242253,
+   "fuente_dato": {
+    "produccion": 99672.0,
+    "unidad": "t aceite crudo (EVA 2018)",
+    "residuo_anual_t": 104418.3,
+    "captacion": 0.065
+   }
+  },
+  {
+   "codigo": "R03",
+   "nombre": "Núcleo palmero de Acacías",
+   "municipio": "Acacías",
+   "tipo_residuo": "Palma (tusa/raquis)",
+   "oferta_t": 98.1,
+   "latitud": 3.990413,
+   "longitud": -73.766034,
+   "fuente_dato": {
+    "produccion": 74913.0,
+    "unidad": "t aceite crudo (EVA 2018)",
+    "residuo_anual_t": 78480.3,
+    "captacion": 0.065
+   }
+  },
+  {
+   "codigo": "R04",
+   "nombre": "Núcleo palmero de Cabuyaro",
+   "municipio": "Cabuyaro",
+   "tipo_residuo": "Palma (tusa/raquis)",
+   "oferta_t": 96.1,
+   "latitud": 4.286705,
+   "longitud": -72.791768,
+   "fuente_dato": {
+    "produccion": 73386.0,
+    "unidad": "t aceite crudo (EVA 2018)",
+    "residuo_anual_t": 76880.6,
+    "captacion": 0.065
+   }
+  },
+  {
+   "codigo": "R05",
+   "nombre": "Núcleo palmero de Barranca de Upía",
+   "municipio": "Barranca de Upía",
+   "tipo_residuo": "Palma (tusa/raquis)",
+   "oferta_t": 78.3,
+   "latitud": 4.566225,
+   "longitud": -72.961083,
+   "fuente_dato": {
+    "produccion": 59801.0,
+    "unidad": "t aceite crudo (EVA 2018)",
+    "residuo_anual_t": 62648.7,
+    "captacion": 0.065
+   }
+  },
+  {
+   "codigo": "R06",
+   "nombre": "Núcleo palmero de San Martín",
+   "municipio": "San Martín",
+   "tipo_residuo": "Palma (tusa/raquis)",
+   "oferta_t": 73.8,
+   "latitud": 3.701899,
+   "longitud": -73.695812,
+   "fuente_dato": {
+    "produccion": 56321.0,
+    "unidad": "t aceite crudo (EVA 2018)",
+    "residuo_anual_t": 59003.0,
+    "captacion": 0.065
+   }
+  },
+  {
+   "codigo": "R07",
+   "nombre": "Molinos arroceros de Fuente de Oro",
+   "municipio": "Fuente de Oro",
+   "tipo_residuo": "Arroz (cascarilla)",
+   "oferta_t": 46.9,
+   "latitud": 3.462875,
+   "longitud": -73.618121,
+   "fuente_dato": {
+    "produccion": 48823.0,
+    "unidad": "t paddy verde (EVA 2018)",
+    "residuo_anual_t": 9764.6,
+    "captacion": 0.25
+   }
+  },
+  {
+   "codigo": "R08",
+   "nombre": "Molinos arroceros de Puerto López",
+   "municipio": "Puerto López",
+   "tipo_residuo": "Arroz (cascarilla)",
+   "oferta_t": 34.9,
+   "latitud": 4.09349,
+   "longitud": -72.957324,
+   "fuente_dato": {
+    "produccion": 36284.0,
+    "unidad": "t paddy verde (EVA 2018)",
+    "residuo_anual_t": 7256.8,
+    "captacion": 0.25
+   }
+  },
+  {
+   "codigo": "R09",
+   "nombre": "Molinos arroceros de Villavicencio",
+   "municipio": "Villavicencio",
+   "tipo_residuo": "Arroz (cascarilla)",
+   "oferta_t": 33.4,
+   "latitud": 4.126369,
+   "longitud": -73.622601,
+   "fuente_dato": {
+    "produccion": 34730.0,
+    "unidad": "t paddy verde (EVA 2018)",
+    "residuo_anual_t": 6946.0,
+    "captacion": 0.25
+   }
+  },
+  {
+   "codigo": "R10",
+   "nombre": "Ganaderías de Puerto López",
+   "municipio": "Puerto López",
+   "tipo_residuo": "Ganadería (estiércol)",
+   "oferta_t": 71.8,
+   "latitud": 4.09349,
+   "longitud": -72.957324,
+   "fuente_dato": {
+    "produccion": 204651.0,
+    "unidad": "cabezas (ICA/FNG 2025, ciclo I)",
+    "residuo_anual_t": 746976.2,
+    "captacion": 0.005
+   }
+  },
+  {
+   "codigo": "R11",
+   "nombre": "Ganaderías de San Martín",
+   "municipio": "San Martín",
+   "tipo_residuo": "Ganadería (estiércol)",
+   "oferta_t": 68.5,
+   "latitud": 3.701899,
+   "longitud": -73.695812,
+   "fuente_dato": {
+    "produccion": 195072.0,
+    "unidad": "cabezas (ICA/FNG 2025, ciclo I)",
+    "residuo_anual_t": 712012.8,
+    "captacion": 0.005
+   }
+  },
+  {
+   "codigo": "R12",
+   "nombre": "Ganaderías de Villavicencio",
+   "municipio": "Villavicencio",
+   "tipo_residuo": "Ganadería (estiércol)",
+   "oferta_t": 41.3,
+   "latitud": 4.126369,
+   "longitud": -73.622601,
+   "fuente_dato": {
+    "produccion": 117753.0,
+    "unidad": "cabezas (ICA/FNG 2025, ciclo I)",
+    "residuo_anual_t": 429798.5,
+    "captacion": 0.005
+   }
+  }
+ ],
+ "plantas": [
+  {
+   "codigo": "RP1",
+   "nombre": "Planta Villavicencio",
+   "municipio": "Villavicencio",
+   "capacidad_t": 300,
+   "costo_operacion_t": 45000,
+   "latitud": 4.126369,
+   "longitud": -73.622601
+  },
+  {
+   "codigo": "RP2",
+   "nombre": "Planta Restrepo",
+   "municipio": "Restrepo",
+   "capacidad_t": 180,
+   "costo_operacion_t": 52000,
+   "latitud": 4.259556,
+   "longitud": -73.565408
+  },
+  {
+   "codigo": "RP3",
+   "nombre": "Planta Granada",
+   "municipio": "Granada",
+   "capacidad_t": 250,
+   "costo_operacion_t": 48000,
+   "latitud": 3.547147,
+   "longitud": -73.705815
+  },
+  {
+   "codigo": "RP4",
+   "nombre": "Planta Puerto Gaitán",
+   "municipio": "Puerto Gaitán",
+   "capacidad_t": 220,
+   "costo_operacion_t": 40000,
+   "latitud": 4.314905,
+   "longitud": -72.087649
+  }
+ ],
+ "rutas": [
+  {
+   "origen": "R01",
+   "destino": "RP1",
+   "distancia_km": 190.5,
+   "duracion_min": 146.9,
+   "geometria": "_wiYzr~vLy_A~tIcsDvsEnoAxqDad@ncL~mCvbEtjCxjLf}DzqFbh@xcEbxLt_PgRdiDxkG`}\\xhGbbSoHxtFn~Ab`Jah@d_DtvBjxBhyDnbQabC~|Cd`C|wRstBrjCgjDb}RfGdbHbbFplHrq@blSkgExiN{lFfcH"
+  },
+  {
+   "origen": "R01",
+   "destino": "RP2",
+   "distancia_km": 209.0,
+   "duracion_min": 161.0,
+   "geometria": "_wiYzr~vLy_A~tIcsDvsEnoAxqDad@ncL~mCvbEtjCxjLf}DzqFbh@xcEbxLt_PgRdiDxkG`}\\xhGbbSoHxtFn~Ab`Jah@d_DtvBjxBnyDldQgbC`{Cd`C|wRstBrjCgjDb}RfGdbHtcFhsHlr@~iNev@hvImtC|pHqxIziJ{hIq_GafKugD"
+  },
+  {
+   "origen": "R01",
+   "destino": "RP3",
+   "distancia_km": 272.2,
+   "duracion_min": 224.3,
+   "geometria": "_wiYzr~vLy_A~tIcsDvsEnoAxqDad@ncL~mCvbEtjCxjLf}DzqFbh@xcEbxLt_PgRdiDxkG`}\\xhGbbSoHxtFn~Ab`Jah@d_DtvBjxBhyDnbQabC~|Cd`C|wRstBrjCgjDb}RfGdbHbbFplHrq@blSkgExiNaiEpwFdb@tiBop@`aA~yDnfC~~A~hG~aCdjAlm@`jHncEhy@t~CmdAxtVh{@beXwhIpdBcbCtxDsNjhCd~AnnBc}@`uOzmAhsCkaA"
+  },
+  {
+   "origen": "R01",
+   "destino": "RP4",
+   "distancia_km": 5.0,
+   "duracion_min": 0.0,
+   "geometria": "_wiYzr~vL??"
+  },
+  {
+   "origen": "R02",
+   "destino": "RP1",
+   "distancia_km": 84.8,
+   "duracion_min": 93.0,
+   "geometria": "_vsUbc`~L{CdOa]SmcDqnA_zAwRg{AkqByl@}WioAkBedB_z@{yClo@m`Bkv@y`@rTuQ|v@bMhcDsvEzZ}v@eRyiA|FqSqM{PhFktAvdFasAgUuyD~RoeBntGwrA`bBmo@d_BkuBdfB{r@pGa\\ncBeu@|JslA||A~n@`jMkAjzCsb@~_CuV|eAgnBbcCu^x`D_kFd`H"
+  },
+  {
+   "origen": "R02",
+   "destino": "RP2",
+   "distancia_km": 103.2,
+   "duracion_min": 107.1,
+   "geometria": "_vsUbc`~L}a@pNm~FibBg{AkqBibFivA{yClo@m`Bkv@os@plAbMhcDsvEzZivCyXgfB`lFasAgUuyD~RoeBntGecCfbEgiDvnBa\\ncBeu@|JslA||A~n@`jMkAjzCys@|zDusB|lCw_@~bDejEx|F_mCzkBwoDsyAoxCwdDmcFodAcvBebBoj@?"
+  },
+  {
+   "origen": "R02",
+   "destino": "RP3",
+   "distancia_km": 100.6,
+   "duracion_min": 132.8,
+   "geometria": "_vsUbc`~Lgh@bsMofC`hEu|@lvCygC`|Bw_Axi@}Yk@_nBriBozB~oHesAnzCZfwBqa@j]xdAjjArz@hk@rWs@~r@zwAftBt]~MxyHoFnrFqbAdkC}Ivj@`Onl@ecAz~FkUvz@sl@zb@iKnw@xMxb@tcAIt}BewArwFatAti@o@pdBcbCrlCY`k@yMfVp`@bqBr|@nnBc}@zaIfUlqAbb@v_CnTzsAs[bh@pB|b@qUsLwQ"
+  },
+  {
+   "origen": "R02",
+   "destino": "RP4",
+   "distancia_km": 192.6,
+   "duracion_min": 184.8,
+   "geometria": "_vsUbc`~L}a@pNm~FibBg{AkqBibFivA{yClo@m`Bkv@os@plAbMhcDsvEzZivCyXgfB`lFasAgUuyD~RocBm`Mk`BsnEqeAlu@}uA_b@kaDjTc~@_yHae@yk@dCswDw^stA~`C}xCwLyeB{fB_qFvC{~@a_EemH`h@e_Dgq@}aAhFykCqs@kpCnHytFsiBenDe~C}rMswCmePeTmgE_~AenEfReiDu{HytLm{B{iBch@ycEg}D{qFujCyjLagA{|@}eA{dC`d@ocLooAyqDfv@grB~kA_[zn@odAv`AmdE]qoC"
+  },
+  {
+   "origen": "R03",
+   "destino": "RP1",
+   "distancia_km": 29.2,
+   "duracion_min": 29.3,
+   "geometria": "ojjW`mfaMgB|E~D}J}Vd@csC|bAcxA}Jod@gj@shAiBjEu^sLgmBrCi_@{O_fA{X}r@imA}x@wt@cRsFeVwD_wBgKq\\ufAc_BsxBeiAwt@maAakAm_@xMgm@yDkV`b@{ZDzG"
+  },
+  {
+   "origen": "R03",
+   "destino": "RP2",
+   "distancia_km": 44.3,
+   "duracion_min": 39.2,
+   "geometria": "ojjW`mfaMeTyBcsC|bAcxA}Jod@gj@ugAqAqB_nD{O_fAga@c}@uzB{aAkLenC}rAu|BmvBmgA}lAypAkvBc_@}Yob@yq@fNimBcqAylCyzC}k@_D{uAkx@s_BcFcvBebBmc@vIaFwI"
+  },
+  {
+   "origen": "R03",
+   "destino": "RP3",
+   "distancia_km": 54.3,
+   "duracion_min": 52.4,
+   "geometria": "ojjW`mfaMbbJnAhdKhs@biIs~Cf{@zBl{BmvAhbHquApdBcbCtxDsNjhCd~AnnBc}@zaIfUdrErw@~|BaXhUih@"
+  },
+  {
+   "origen": "R03",
+   "destino": "RP4",
+   "distancia_km": 217.3,
+   "duracion_min": 173.4,
+   "geometria": "ojjW`mfaMihDb_AyfEcy@{m@mjHu`CshA}YimDwnFoeF~AokDvbEavFjgEyiNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wR`bC_}C}pBumKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  },
+  {
+   "origen": "R04",
+   "destino": "RP1",
+   "distancia_km": 112.1,
+   "duracion_min": 139.0,
+   "geometria": "midYzah{Lec@dlBbOboCaq@rwBrtBfjLtcGbjCx\\phAtmBjo@z`An}Fz{@|c@hmBwrAzw@nwA`{CjtAeYtnDbxBfsJhRxvDyj@riEhS~hKd|@lkCbFtjCrd@nh@lnArE{Ix`JtcFhsHdo@riScv@j}DysBvmCqZlxC{lFfcH"
+  },
+  {
+   "origen": "R04",
+   "destino": "RP2",
+   "distancia_km": 133.2,
+   "duracion_min": 129.0,
+   "geometria": "midYzah{Lq_AdqLoeEddBqjFliEm`HnyC_iLxiBiiE_OyzIddBmFhrFxWnvDh}@tyB~gGffDzdD`~Dxh@ndEflC`nAxZ}XznBxwCxdCw^|tApg@zyC~fDsAtwA{qB`uGfc@jyAoIf{BtzEl`Bjc@bpE|qA~}ArTrlAcX|dAbx@xgBriAbaAxmDz\\twCtvCzU~aAkV|mBzm@jh@dGpfAafBz_CtiAhlJ"
+  },
+  {
+   "origen": "R04",
+   "destino": "RP3",
+   "distancia_km": 230.0,
+   "duracion_min": 215.1,
+   "geometria": "midYzah{Lq_AdqLorUbiMco]~~DoFtoFdvAxsHzmLheJxh@ndE`hDbt@znBxwCvzExG|wClcDqrBhqJvXruEtzEl`B|kDnkPlxF~~AtwCtvC`v@|zGqfBxfCzn@pkH~d`@`dTxbBxlG||C~_C`RtsFfpBbp@nsFuz@tsVh{@beXwhIpdBcbCtxDsNjhCd~AnnBc}@`uOzmAhsCkaA"
+  },
+  {
+   "origen": "R04",
+   "destino": "RP4",
+   "distancia_km": 176.5,
+   "duracion_min": 187.4,
+   "geometria": "midYzah{Lec@dlBbOboCaq@rwBrtBfjLtcGbjCx\\phAtmBjo@z`An}Fz{@|c@hmBwrAzw@nwApyCnrA{WfoD~bAdcF|lB_s@bpGoI_Bix@~{BeyBwLyeB{fB_qFvC{~@a_EemH`h@e_Dgq@}aAhFykCqs@kpCnHytFsiBenDe~C}rMswCmePeTmgE_~AenEfReiDu{HytLm{B{iBch@ycEg}D{qFujCyjLagA{|@}eA{dC`d@ocLooAyqDfv@grB~kA_[zn@odAv`AmdE]qoC"
+  },
+  {
+   "origen": "R05",
+   "destino": "RP1",
+   "distancia_km": 110.6,
+   "duracion_min": 81.4,
+   "geometria": "iyzZjei|LoZfnGpWjsDh}@tyB~gGffDzdD`~Dxh@ndEflC`nAxZ}XznBxwCxdCw^|tApg@zyC~fDsAtwA{qB`uGfc@jyAoIf{BtzEl`Bjc@bpE|qA~}ArTrlAcX|dAbx@xgBriAbaAxmDz\\twCtvCzU~aAkV|mBzk@ld@tIpcAqfBxfCzn@pkHxaDxvChzFpqAj`GnmFtp@aOfUvj@zpBgsA"
+  },
+  {
+   "origen": "R05",
+   "destino": "RP2",
+   "distancia_km": 92.3,
+   "duracion_min": 67.5,
+   "geometria": "iyzZjei|Lv@~OcXxHxP~V}Tl{EpWjsDh}@tyBlfEdpBp`A`u@zdD`~Dl[fpAgMl}@rZxt@biBve@bb@hg@xZ}XznBxwCtw@_AblAw\\|tApg@xxAnlA``AnyAsAtwAq_AtnBiq@jeDfc@jyAmPdnA|E`l@hMpRnsAbOzwBv|@sEt\\~i@lrD|qA~}ArTrlAcX|dAbx@xgBriAbaAxmDz\\zkBhiCxj@jLzU~aAkV|mBzm@jh@dGpfAoWxy@qmA`eAdb@zsG~f@tp@wSxRfS|Q"
+  },
+  {
+   "origen": "R05",
+   "destino": "RP3",
+   "distancia_km": 189.1,
+   "duracion_min": 153.7,
+   "geometria": "iyzZjei|LoZfnGzuA`nHzmLheJxh@ndE`hDbt@znBxwCvzExGzyC~fDotBvmJvXruEtzEl`B|kDnkPlxF~~AtwCtvC`v@|zGqfBxfCzn@pkHxf`@xeT~`B`kG||C~_ClS~tFhfEvx@|zCsdAxtVh{@beXwhIpdBcbCtxDsNjhCd~AnnBc}@`uOzmAhsCkaA"
+  },
+  {
+   "origen": "R05",
+   "destino": "RP4",
+   "distancia_km": 300.1,
+   "duracion_min": 226.2,
+   "geometria": "iyzZjei|LoZfnGzuA`nHzmLheJxh@ndE`hDbt@znBxwCvzExGzyC~fDotBvmJvXruEtzEl`B|kDnkPlxF~~AtwCtvC`v@|zGqfBxfCzn@pkHlfVpsNz|ImtJfiE{lNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wRfbCa{CcqBsoKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  },
+  {
+   "origen": "R06",
+   "destino": "RP1",
+   "distancia_km": 64.3,
+   "duracion_min": 61.5,
+   "geometria": "e`rU|ux`MyCn^ouCnBm_Bd`Cui@n@swF`tAm{BlvAg{@{BciIr~CuY_R}rHiLuu@_Sm_AvL}mHwT{tCncAq{AuH{d@ij@mlA}CeAulD{O_fAga@c}@y{BscAgKmlCyr@uuAee@gk@qrB}cAgq@}~@unAcb@bHmdAfb@_R"
+  },
+  {
+   "origen": "R06",
+   "destino": "RP2",
+   "distancia_km": 79.4,
+   "duracion_min": 71.4,
+   "geometria": "e`rU|ux`MyCn^ouCnBm_Bd`CibHpuAm{BlvAg{@{BciIr~CusVi{@{tCncAq{AuH{d@ij@mlA}CaRusFga@c}@uzB{aAkLenCytAo~BobEmwCiqCsbAyq@fNc{F}lFmcFodAcvBebBoj@?"
+  },
+  {
+   "origen": "R06",
+   "destino": "RP3",
+   "distancia_km": 19.5,
+   "duracion_min": 20.2,
+   "geometria": "e`rU|ux`MpJ|Y|VoHfVp`@|yAlv@dVdEb_@yFdy@}o@dTkDzhFvW~wAoAlqAbb@v_CnTzsAs[bh@pB|b@qUsLwQ"
+  },
+  {
+   "origen": "R06",
+   "destino": "RP4",
+   "distancia_km": 252.4,
+   "duracion_min": 205.6,
+   "geometria": "e`rU|ux`M{``@|lNytVi{@u~CldAocEiy@mm@ajHu`CshA}YimDyjF}wE]ayDvbEavFjgEyiNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wR`bC_}C}pBumKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  },
+  {
+   "origen": "R07",
+   "destino": "RP1",
+   "distancia_km": 97.8,
+   "duracion_min": 96.5,
+   "geometria": "ajcThpi`M{~CdaEqRtdDoqJpdF}cCtX_kEww@efIiUejBd}@wgCq~AiyD~NqdBbbCibHpuAm{BlvAg{@{BciIr~CytVi{@}zCrdAugEaz@eAulDwi@}yBacCalAkLenC}rAu|BmzFalD~GsdAfb@_R"
+  },
+  {
+   "origen": "R07",
+   "destino": "RP2",
+   "distancia_km": 112.9,
+   "duracion_min": 106.4,
+   "geometria": "ajcThpi`M{~CdaEqRtdDoqJpdF}cCtX_kEww@efIiUejBd}@wgCq~AiyD~NqdBbbCibHpuAm{BlvAg{@{BciIr~CytVi{@u~CldA}cE{y@aRusFga@c}@uzB{aAkLenCytAo~BobEmwCiqCsbAyq@fNc{F}lFmcFodAcvBebBoj@?"
+  },
+  {
+   "origen": "R07",
+   "destino": "RP3",
+   "distancia_km": 15.8,
+   "duracion_min": 19.0,
+   "geometria": "ajcThpi`MaCaC|KfOa\\zVyw@rvAafAxs@yJtPBnH`NrI^hFyo@fgAdNnw@kBxIsdA`n@so@|i@aZdCwk@fT_WvUwq@~Ve~@dg@iLcOkDd@"
+  },
+  {
+   "origen": "R07",
+   "destino": "RP4",
+   "distancia_km": 285.9,
+   "duracion_min": 240.5,
+   "geometria": "ajcThpi`M{~CdaEqRtdDoqJpdFcwSkt@ejBd}@wgCq~AiyD~NqdBbbCceXvhIytVi{@}zCrdAyeEmx@{n@ckHu`CshA}YimDejFsvEq@kzDvbEavFjgEyiNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wR`bC_}C}pBumKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  },
+  {
+   "origen": "R08",
+   "destino": "RP1",
+   "distancia_km": 82.4,
+   "duracion_min": 61.9,
+   "geometria": "co~Wrnh|Lzt@lc@hcAnyBwCz~@zp@|mA~t@`bDvLxeB_oAl_B_l@vX_Dv^v^rtA`I`hCgMpn@`e@xk@|~@`sHerB~gCgVprBqfBxvG{m@zrFhMxgAkJ`|Dvf@pwAvtCj_Dpi@hvAxs@|lNeAd~C_w@raEysBvmCqZlxC{lFfcH"
+  },
+  {
+   "origen": "R08",
+   "destino": "RP2",
+   "distancia_km": 100.8,
+   "duracion_min": 76.1,
+   "geometria": "co~Wrnh|Lzt@lc@hcAnyBwCz~@zp@|mA~t@`bDvLxeB_oAl_B_l@vX_Dv^v^rtA`I`hCgMpn@`e@xk@|~@`sHerB~gCgVprBqfBxvG{m@zrFhMxgAkJ`|Dvf@pwAvtCj_Dpi@hvAxs@|lNaBlbDcv@j}DysBvmCm\\n{CejEx|FkmC`lBsZaa@wp@tN_bBmgAoxCwdD}k@_D{uAkx@s_BcFcvBebBmc@vIaFwI"
+  },
+  {
+   "origen": "R08",
+   "destino": "RP3",
+   "distancia_km": 164.1,
+   "duracion_min": 139.4,
+   "geometria": "co~Wrnh|LdyB|}CwCz~@zfB~pFvLxeB_aC|xCv^rtAeCrwD`e@xk@|~@`sHerB~gCy}BjjK{m@zrF|AzdG`gFfoIrq@blS_w@raEysBvmCqZlxCaiEpwFdb@tiBcs@~v@rbGfmFhZzmDt`CrhAxj@x{BdAtlDtgE`z@|zCsdAxtVh{@biIs~Cf{@zBl{BmvAhbHquApdBcbCtxDsNjhCd~AnnBc}@zaIfUdrErw@~|BaXhUih@"
+  },
+  {
+   "origen": "R08",
+   "destino": "RP4",
+   "distancia_km": 108.1,
+   "duracion_min": 86.3,
+   "geometria": "co~Wrnh|L{eAqrC`i@{zCgq@}aAhFykCqs@kpCpFg}FugBweDe~C}rMswCmePeTmgE_~AenEfReiDu{HytLm{B{iBch@ycEg}D{qFujCyjLagA{|@}eA{dC`d@ocLooAyqDfv@grB~kA_[zn@odAv`AmdE]qoC"
+  },
+  {
+   "origen": "R09",
+   "destino": "RP1",
+   "distancia_km": 5.0,
+   "duracion_min": 0.0,
+   "geometria": "_~dXzij`M??"
+  },
+  {
+   "origen": "R09",
+   "destino": "RP2",
+   "distancia_km": 19.4,
+   "duracion_min": 17.1,
+   "geometria": "_~dXzij`M~KuIiCsDguB~xAsZaa@g\\c@cS|OanBoqAylCyzC}k@_D{uAkx@s_BcFyf@iVuo@kv@s]oSmc@vIaFwI"
+  },
+  {
+   "origen": "R09",
+   "destino": "RP3",
+   "distancia_km": 83.2,
+   "duracion_min": 80.9,
+   "geometria": "_~dXzij`MteArv@wn@njAvtDr`CdjAtaBrWbjD`cC`lAvi@|yBdAtlDtmApEpa@pi@r}AxGztCocAtsVh{@biIs~Cf{@zBl{BmvAhbHquApdBcbCtxDsNjhCd~AnnBc}@zaIfUdrErw@~|BaXhUih@"
+  },
+  {
+   "origen": "R09",
+   "destino": "RP4",
+   "distancia_km": 190.1,
+   "duracion_min": 147.2,
+   "geometria": "_~dXzij`MzlFgcHjgEyiNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wR`bC_}C}pBumKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  },
+  {
+   "origen": "R10",
+   "destino": "RP1",
+   "distancia_km": 82.4,
+   "duracion_min": 61.9,
+   "geometria": "co~Wrnh|Lzt@lc@hcAnyBwCz~@zp@|mA~t@`bDvLxeB_oAl_B_l@vX_Dv^v^rtA`I`hCgMpn@`e@xk@|~@`sHerB~gCgVprBqfBxvG{m@zrFhMxgAkJ`|Dvf@pwAvtCj_Dpi@hvAxs@|lNeAd~C_w@raEysBvmCqZlxC{lFfcH"
+  },
+  {
+   "origen": "R10",
+   "destino": "RP2",
+   "distancia_km": 100.8,
+   "duracion_min": 76.1,
+   "geometria": "co~Wrnh|Lzt@lc@hcAnyBwCz~@zp@|mA~t@`bDvLxeB_oAl_B_l@vX_Dv^v^rtA`I`hCgMpn@`e@xk@|~@`sHerB~gCgVprBqfBxvG{m@zrFhMxgAkJ`|Dvf@pwAvtCj_Dpi@hvAxs@|lNaBlbDcv@j}DysBvmCm\\n{CejEx|FkmC`lBsZaa@wp@tN_bBmgAoxCwdD}k@_D{uAkx@s_BcFcvBebBmc@vIaFwI"
+  },
+  {
+   "origen": "R10",
+   "destino": "RP3",
+   "distancia_km": 164.1,
+   "duracion_min": 139.4,
+   "geometria": "co~Wrnh|LdyB|}CwCz~@zfB~pFvLxeB_aC|xCv^rtAeCrwD`e@xk@|~@`sHerB~gCy}BjjK{m@zrF|AzdG`gFfoIrq@blS_w@raEysBvmCqZlxCaiEpwFdb@tiBcs@~v@rbGfmFhZzmDt`CrhAxj@x{BdAtlDtgE`z@|zCsdAxtVh{@biIs~Cf{@zBl{BmvAhbHquApdBcbCtxDsNjhCd~AnnBc}@zaIfUdrErw@~|BaXhUih@"
+  },
+  {
+   "origen": "R10",
+   "destino": "RP4",
+   "distancia_km": 108.1,
+   "duracion_min": 86.3,
+   "geometria": "co~Wrnh|L{eAqrC`i@{zCgq@}aAhFykCqs@kpCpFg}FugBweDe~C}rMswCmePeTmgE_~AenEfReiDu{HytLm{B{iBch@ycEg}D{qFujCyjLagA{|@}eA{dC`d@ocLooAyqDfv@grB~kA_[zn@odAv`AmdE]qoC"
+  },
+  {
+   "origen": "R11",
+   "destino": "RP1",
+   "distancia_km": 64.3,
+   "duracion_min": 61.5,
+   "geometria": "e`rU|ux`MyCn^ouCnBm_Bd`Cui@n@swF`tAm{BlvAg{@{BciIr~CuY_R}rHiLuu@_Sm_AvL}mHwT{tCncAq{AuH{d@ij@mlA}CeAulD{O_fAga@c}@y{BscAgKmlCyr@uuAee@gk@qrB}cAgq@}~@unAcb@bHmdAfb@_R"
+  },
+  {
+   "origen": "R11",
+   "destino": "RP2",
+   "distancia_km": 79.4,
+   "duracion_min": 71.4,
+   "geometria": "e`rU|ux`MyCn^ouCnBm_Bd`CibHpuAm{BlvAg{@{BciIr~CusVi{@{tCncAq{AuH{d@ij@mlA}CaRusFga@c}@uzB{aAkLenCytAo~BobEmwCiqCsbAyq@fNc{F}lFmcFodAcvBebBoj@?"
+  },
+  {
+   "origen": "R11",
+   "destino": "RP3",
+   "distancia_km": 19.5,
+   "duracion_min": 20.2,
+   "geometria": "e`rU|ux`MpJ|Y|VoHfVp`@|yAlv@dVdEb_@yFdy@}o@dTkDzhFvW~wAoAlqAbb@v_CnTzsAs[bh@pB|b@qUsLwQ"
+  },
+  {
+   "origen": "R11",
+   "destino": "RP4",
+   "distancia_km": 252.4,
+   "duracion_min": 205.6,
+   "geometria": "e`rU|ux`M{``@|lNytVi{@u~CldAocEiy@mm@ajHu`CshA}YimDyjF}wE]ayDvbEavFjgEyiNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wR`bC_}C}pBumKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  },
+  {
+   "origen": "R12",
+   "destino": "RP1",
+   "distancia_km": 5.0,
+   "duracion_min": 0.0,
+   "geometria": "_~dXzij`M??"
+  },
+  {
+   "origen": "R12",
+   "destino": "RP2",
+   "distancia_km": 19.4,
+   "duracion_min": 17.1,
+   "geometria": "_~dXzij`M~KuIiCsDguB~xAsZaa@g\\c@cS|OanBoqAylCyzC}k@_D{uAkx@s_BcFyf@iVuo@kv@s]oSmc@vIaFwI"
+  },
+  {
+   "origen": "R12",
+   "destino": "RP3",
+   "distancia_km": 83.2,
+   "duracion_min": 80.9,
+   "geometria": "_~dXzij`MteArv@wn@njAvtDr`CdjAtaBrWbjD`cC`lAvi@|yBdAtlDtmApEpa@pi@r}AxGztCocAtsVh{@biIs~Cf{@zBl{BmvAhbHquApdBcbCtxDsNjhCd~AnnBc}@zaIfUdrErw@~|BaXhUih@"
+  },
+  {
+   "origen": "R12",
+   "destino": "RP4",
+   "distancia_km": 190.1,
+   "duracion_min": 147.2,
+   "geometria": "_~dXzij`MzlFgcHjgEyiNsq@clScbFqlHgGebHfjDc}RrtBsjCe`C}wR`bC_}C}pBumKa_EemH`h@e_Do~Ac`JnHytFyhGcbSykGa}\\fReiDcxLu_Pch@ycEg}D{qFujCyjL_nCwbE`d@ocLooAyqDbsDwsEx_A_uI"
+  }
+ ]
+}

@@ -14,7 +14,7 @@ from app.schemas.gestion import (
     RutaCambio,
     RutaSalida,
 )
-from app.services.distancias import distancia_vial_estimada
+from app.services.distancias import FUENTE_MANUAL, medir_ruta
 
 
 # Errores de negocio que la API traduce a 404 y 409
@@ -82,13 +82,13 @@ def tipos_origen(tipo: TipoNodo) -> list[TipoNodo]:
 
 
 def crear_ruta_estimada(sesion: Session, origen: Nodo, destino: Nodo) -> None:
-    distancia = distancia_vial_estimada(
+    medida = medir_ruta(
         float(origen.latitud),
         float(origen.longitud),
         float(destino.latitud),
         float(destino.longitud),
     )
-    sesion.add(Ruta(origen_id=origen.id, destino_id=destino.id, distancia_km=distancia))
+    sesion.add(Ruta(origen_id=origen.id, destino_id=destino.id, **medida))
 
 
 # Rutas que faltan para el nodo nuevo, con distancia vial estimada
@@ -184,6 +184,9 @@ def obtener_matriz(sesion: Session) -> MatrizRutas:
                 costo_km_t=costo_km,
                 habilitada=ruta.habilitada,
                 costo_unitario=costo_unitario,
+                duracion_min=None if ruta.duracion_min is None else float(ruta.duracion_min),
+                fuente_distancia=ruta.fuente_distancia,
+                geometria=ruta.geometria,
             )
         )
         if nodo_origen.codigo not in origenes:
@@ -216,6 +219,7 @@ def actualizar_rutas(sesion: Session, cambios: list[RutaCambio]) -> ResumenLote:
                 actualizadas += 1
             if cambio.distancia_km is not None:
                 ruta.distancia_km = cambio.distancia_km
+                ruta.fuente_distancia = FUENTE_MANUAL
             if cambio.costo_km_t is not None:
                 ruta.costo_km_t = cambio.costo_km_t
             if cambio.quitar_costo_km_t:

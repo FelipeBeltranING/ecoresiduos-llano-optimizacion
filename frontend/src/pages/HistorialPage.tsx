@@ -1,230 +1,306 @@
-import { Download } from "lucide-react";
+import { FileSpreadsheet, FileText } from "lucide-react";
 import { useState } from "react";
 
+import {
+  urlReporte,
+  useEjecucion,
+  useEjecuciones,
+  useEscenarios,
+  useListaAnalisis,
+} from "@/api/hooks";
+import type { Metodo } from "@/api/tipos";
 import { Boton } from "@/components/ui/Boton";
+import { Cargando, ErrorApi, Vacio } from "@/components/ui/Estado";
 import { Etiqueta } from "@/components/ui/Etiqueta";
 import { PageBody, PageHero } from "@/components/ui/PageHero";
 import { Segmentado } from "@/components/ui/Segmentado";
 import { Tarjeta } from "@/components/ui/Tarjeta";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { descargar, formatoFecha } from "@/lib/red";
 
-type Metodo = "Exacto" | "Genético" | "Sensibilidad";
+const TAMANO = 15;
 
-interface Ejecucion {
-  fecha: string;
-  metodo: Metodo;
-  escenario: string;
-  costo: string;
-  gap: string;
-  estado: "Óptimo" | "Cuasi-óptimo" | "Completado";
-}
-
-const filtros = [
-  { label: "Todos", value: "todos" },
-  { label: "Exacto", value: "exacto" },
-  { label: "Genético", value: "genetico" },
-  { label: "Sensibilidad", value: "sensibilidad" },
-];
-
-const ejecuciones: Ejecucion[] = [
-  {
-    fecha: "26 oct 2026 · 14:32",
-    metodo: "Exacto",
-    escenario: "Caso base",
-    costo: "64.691.000",
-    gap: "—",
-    estado: "Óptimo",
-  },
-  {
-    fecha: "26 oct 2026 · 14:35",
-    metodo: "Genético",
-    escenario: "Caso base",
-    costo: "65.012.000",
-    gap: "0,50 %",
-    estado: "Cuasi-óptimo",
-  },
-  {
-    fecha: "26 oct 2026 · 15:02",
-    metodo: "Sensibilidad",
-    escenario: "Combustible +20 %",
-    costo: "69.385.200",
-    gap: "—",
-    estado: "Completado",
-  },
-  {
-    fecha: "25 oct 2026 · 18:20",
-    metodo: "Exacto",
-    escenario: "Oferta −10 %",
-    costo: "58.402.000",
-    gap: "—",
-    estado: "Óptimo",
-  },
-  {
-    fecha: "25 oct 2026 · 18:24",
-    metodo: "Genético",
-    escenario: "Oferta −10 %",
-    costo: "58.788.000",
-    gap: "0,66 %",
-    estado: "Cuasi-óptimo",
-  },
-  {
-    fecha: "24 oct 2026 · 09:12",
-    metodo: "Exacto",
-    escenario: "Villavicencio −20 %",
-    costo: "65.756.000",
-    gap: "—",
-    estado: "Óptimo",
-  },
-  {
-    fecha: "23 oct 2026 · 16:45",
-    metodo: "Genético",
-    escenario: "Villavicencio −20 %",
-    costo: "66.098.000",
-    gap: "0,52 %",
-    estado: "Cuasi-óptimo",
-  },
-  {
-    fecha: "22 oct 2026 · 11:08",
-    metodo: "Sensibilidad",
-    escenario: "Oferta −10 %",
-    costo: "58.402.000",
-    gap: "—",
-    estado: "Completado",
-  },
-];
-
-function estadoEtiqueta(estado: Ejecucion["estado"]) {
-  return estado === "Cuasi-óptimo" ? "alerta" : "exito";
+function Detalle({ id }: { id: string }) {
+  const detalle = useEjecucion(id);
+  if (detalle.isLoading) return <Cargando />;
+  if (detalle.isError) return <ErrorApi error={detalle.error} />;
+  const d = detalle.data;
+  if (!d) return null;
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="flex flex-wrap gap-2">
+        <Etiqueta>{d.metodo === "EXACTO" ? "Exacto" : "Genético"}</Etiqueta>
+        <Etiqueta variante="neutral">{d.estado}</Etiqueta>
+      </div>
+      <p className="text-2xl font-bold tabular-nums text-text">
+        {formatCurrency(d.costo_total ?? 0)}
+      </p>
+      <p className="text-xs text-muted">
+        {formatoFecha(d.creado_en)} · {formatNumber(d.tiempo_ms ?? 0)} ms ·{" "}
+        {formatNumber(d.violaciones ?? 0)} violaciones
+      </p>
+      {d.parametros ? (
+        <p className="text-xs text-muted">
+          Población {d.parametros.tamano_poblacion}, generaciones {d.parametros.generaciones}, cruce{" "}
+          {d.parametros.prob_cruce} ({d.parametros.tipo_cruce}), mutación{" "}
+          {d.parametros.prob_mutacion}, selección {d.parametros.tipo_seleccion}, semilla{" "}
+          {d.parametros.semilla ?? "—"}
+        </p>
+      ) : null}
+      <div className="max-h-[260px] overflow-auto scroll-fino">
+        <table className="tabla tabla--compacta">
+          <thead>
+            <tr>
+              <th>Ruta</th>
+              <th className="text-right">t</th>
+              <th className="text-right">COP/t</th>
+            </tr>
+          </thead>
+          <tbody>
+            {d.flujos.map((f) => (
+              <tr key={`${f.origen}-${f.destino}`}>
+                <td>
+                  {f.origen} → {f.destino}
+                </td>
+                <td className="text-right tabular-nums">{formatNumber(f.toneladas)}</td>
+                <td className="text-right tabular-nums">{formatCurrency(f.costo_unitario)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex gap-2">
+        <Boton
+          variante="acento"
+          icono={<FileSpreadsheet className="size-4" aria-hidden="true" />}
+          onClick={() => descargar(urlReporte("ejecuciones", d.id, "xlsx"))}
+        >
+          Excel
+        </Boton>
+        <Boton
+          variante="acento"
+          icono={<FileText className="size-4" aria-hidden="true" />}
+          onClick={() => descargar(urlReporte("ejecuciones", d.id, "pdf"))}
+        >
+          PDF
+        </Boton>
+      </div>
+    </div>
+  );
 }
 
 export function HistorialPage() {
-  const [filtro, setFiltro] = useState("todos");
-
-  const visibles = ejecuciones.filter((ejecucion) => {
-    if (filtro === "todos") return true;
-    return ejecucion.metodo.toLowerCase() === filtro;
+  const [metodo, setMetodo] = useState<"" | Metodo>("");
+  const [escenario, setEscenario] = useState("");
+  const [desde, setDesde] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const [seleccion, setSeleccion] = useState<string | null>(null);
+  const escenarios = useEscenarios();
+  const analisis = useListaAnalisis();
+  const lista = useEjecuciones({
+    metodo: metodo || undefined,
+    escenario_id: escenario && escenario !== "base" ? escenario : undefined,
+    solo_base: escenario === "base" || undefined,
+    desde: desde ? new Date(`${desde}T00:00:00`).toISOString() : undefined,
+    pagina,
+    tamano: TAMANO,
   });
+  const total = lista.data?.total ?? 0;
+  const paginas = Math.max(1, Math.ceil(total / TAMANO));
 
   return (
     <>
       <PageHero
         eyebrow="Historial · HU-15 · HU-16"
         title="Historial y reportes"
-        description="Consulta de ejecuciones anteriores, escenarios guardados y exportación de resultados"
+        description="Cada ejecución guarda un snapshot de la red y sus parámetros (el AG guarda la semilla y es reproducible)"
         kpis={[
-          { valor: "14", etiqueta: "Ejecuciones" },
-          { valor: "4", etiqueta: "Escenarios" },
-          { valor: "6", etiqueta: "Reportes" },
+          { valor: String(total), etiqueta: "Ejecuciones (filtro actual)" },
+          { valor: String(escenarios.data?.length ?? "—"), etiqueta: "Escenarios" },
+          { valor: String(analisis.data?.length ?? "—"), etiqueta: "Análisis" },
         ]}
       />
-
       <PageBody>
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap items-end gap-3">
           <Segmentado
-            items={filtros}
-            value={filtro}
-            onChange={setFiltro}
-            ariaLabel="Filtrar ejecuciones por método"
-            className="w-full sm:w-auto"
+            items={[
+              { label: "Todos", value: "" },
+              { label: "Exacto", value: "EXACTO" },
+              { label: "Genético", value: "GENETICO" },
+            ]}
+            value={metodo}
+            onChange={(v) => {
+              setMetodo(v as "" | Metodo);
+              setPagina(1);
+            }}
+            ariaLabel="Filtrar por método"
           />
-          <div className="flex flex-wrap gap-2">
-            <Boton variante="acento" icono={<Download className="size-4" aria-hidden="true" />}>
-              Exportar Excel
-            </Boton>
-            <Boton variante="acento" icono={<Download className="size-4" aria-hidden="true" />}>
-              Exportar PDF
-            </Boton>
-          </div>
+          <label className="flex flex-col gap-1">
+            <span className="type-label text-text">Escenario</span>
+            <select
+              className="h-10 rounded-control border border-border bg-surface px-2 text-sm"
+              value={escenario}
+              onChange={(e) => {
+                setEscenario(e.target.value);
+                setPagina(1);
+              }}
+            >
+              <option value="">Todos</option>
+              <option value="base">Solo red base</option>
+              {(escenarios.data ?? []).map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="type-label text-text">Desde</span>
+            <input
+              type="date"
+              className="h-10 rounded-control border border-border bg-surface px-2 text-sm"
+              value={desde}
+              onChange={(e) => {
+                setDesde(e.target.value);
+                setPagina(1);
+              }}
+            />
+          </label>
         </div>
 
-        <Tarjeta relleno="none" className="mt-6 overflow-hidden">
-          <div className="hidden overflow-x-auto scroll-fino md:block">
-            <table className="tabla min-w-[760px]">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Método</th>
-                  <th>Escenario</th>
-                  <th className="text-right">Costo (COP/sem)</th>
-                  <th className="text-right">Gap</th>
-                  <th className="text-right">Estado</th>
-                  <th className="w-[110px] text-right">
-                    <span className="sr-only">Acciones</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibles.map((ejecucion) => (
-                  <tr key={`${ejecucion.fecha}-${ejecucion.metodo}`}>
-                    <td className="text-muted">{ejecucion.fecha}</td>
-                    <td className="font-medium text-text">{ejecucion.metodo}</td>
-                    <td className="text-text">{ejecucion.escenario}</td>
-                    <td className="text-right font-semibold tabular-nums text-text">
-                      {ejecucion.costo}
-                    </td>
-                    <td className="text-right tabular-nums text-muted">{ejecucion.gap}</td>
-                    <td className="text-right">
-                      <Etiqueta variante={estadoEtiqueta(ejecucion.estado)}>
-                        {ejecucion.estado}
-                      </Etiqueta>
-                    </td>
-                    <td className="text-right">
-                      <button
-                        type="button"
-                        className="text-sm font-semibold text-primary hover:text-primary-dark"
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <Tarjeta relleno="none" className="min-w-0 overflow-hidden">
+            {lista.isLoading ? (
+              <div className="p-5">
+                <Cargando />
+              </div>
+            ) : null}
+            {lista.isError ? (
+              <div className="p-5">
+                <ErrorApi error={lista.error} />
+              </div>
+            ) : null}
+            {lista.data && lista.data.items.length === 0 ? (
+              <div className="p-5">
+                <Vacio>No hay ejecuciones con este filtro.</Vacio>
+              </div>
+            ) : null}
+            {lista.data?.items.length ? (
+              <div className="overflow-x-auto scroll-fino">
+                <table className="tabla tabla--compacta min-w-[640px]">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Método</th>
+                      <th>Escenario</th>
+                      <th className="text-right">Costo</th>
+                      <th className="text-right">Tiempo</th>
+                      <th className="text-right">Violaciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lista.data.items.map((e) => (
+                      <tr
+                        key={e.id}
+                        className={[
+                          "cursor-pointer hover:bg-primary-soft",
+                          seleccion === e.id ? "bg-primary-soft" : "",
+                        ].join(" ")}
+                        onClick={() => setSeleccion(e.id)}
+                        tabIndex={0}
+                        onKeyDown={(ev) => ev.key === "Enter" && setSeleccion(e.id)}
                       >
-                        Ver detalle
-                      </button>
-                    </td>
-                  </tr>
+                        <td>{formatoFecha(e.creado_en)}</td>
+                        <td>{e.metodo === "EXACTO" ? "Exacto" : "Genético"}</td>
+                        <td className="text-xs text-muted">{e.escenario_nombre ?? "Red base"}</td>
+                        <td className="text-right tabular-nums">
+                          {e.costo_total != null ? formatCurrency(e.costo_total) : "—"}
+                        </td>
+                        <td className="text-right tabular-nums">
+                          {formatNumber(e.tiempo_ms ?? 0)} ms
+                        </td>
+                        <td className="text-right tabular-nums">
+                          {formatNumber(e.violaciones ?? 0)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-2 px-5 py-3 text-xs text-muted">
+              <span>
+                Página {pagina} de {paginas}
+              </span>
+              <div className="flex gap-2">
+                <Boton
+                  variante="secundario"
+                  disabled={pagina <= 1}
+                  onClick={() => setPagina((p) => p - 1)}
+                >
+                  Anterior
+                </Boton>
+                <Boton
+                  variante="secundario"
+                  disabled={pagina >= paginas}
+                  onClick={() => setPagina((p) => p + 1)}
+                >
+                  Siguiente
+                </Boton>
+              </div>
+            </div>
+          </Tarjeta>
+
+          <div className="space-y-4">
+            <Tarjeta>
+              <h2 className="type-title-15 text-text">Detalle</h2>
+              <div className="mt-3">
+                {seleccion ? (
+                  <Detalle id={seleccion} />
+                ) : (
+                  <Vacio>Elija una ejecución de la lista.</Vacio>
+                )}
+              </div>
+            </Tarjeta>
+            <Tarjeta>
+              <h2 className="type-title-15 text-text">Análisis guardados</h2>
+              <ul className="mt-3 space-y-2">
+                {(analisis.data ?? []).slice(0, 8).map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                  >
+                    <span>
+                      {a.tipo === "COMPARACION" ? "Comparativo" : "Escalabilidad"} ·{" "}
+                      <span className="text-xs text-muted">
+                        {formatoFecha(a.creado_en)} · {a.estado}
+                      </span>
+                    </span>
+                    {a.estado === "Terminado" ? (
+                      <span className="flex gap-1">
+                        <Boton
+                          variante="fantasma"
+                          onClick={() => descargar(urlReporte("analisis", a.id, "xlsx"))}
+                        >
+                          Excel
+                        </Boton>
+                        <Boton
+                          variante="fantasma"
+                          onClick={() => descargar(urlReporte("analisis", a.id, "pdf"))}
+                        >
+                          PDF
+                        </Boton>
+                      </span>
+                    ) : null}
+                  </li>
                 ))}
-              </tbody>
-            </table>
+                {analisis.data?.length === 0 ? (
+                  <li className="text-sm text-muted">Sin análisis todavía.</li>
+                ) : null}
+              </ul>
+            </Tarjeta>
           </div>
-
-          <div className="divide-y divide-border md:hidden">
-            {visibles.map((ejecucion) => (
-              <article key={`${ejecucion.fecha}-${ejecucion.metodo}`} className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="type-title-15 text-text">{ejecucion.escenario}</p>
-                    <p className="mt-0.5 text-xs leading-4 text-muted">{ejecucion.fecha}</p>
-                  </div>
-                  <Etiqueta variante={estadoEtiqueta(ejecucion.estado)}>
-                    {ejecucion.estado}
-                  </Etiqueta>
-                </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-xs leading-4">
-                  <div>
-                    <dt className="text-muted">Método</dt>
-                    <dd className="mt-0.5 font-semibold text-text">{ejecucion.metodo}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Costo</dt>
-                    <dd className="mt-0.5 font-semibold tabular-nums text-text">
-                      {ejecucion.costo}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Gap</dt>
-                    <dd className="mt-0.5 font-semibold tabular-nums text-text">{ejecucion.gap}</dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-4">
-            <p className="text-xs leading-4 text-muted">
-              Mostrando {visibles.length} de 14 ejecuciones
-            </p>
-            <button
-              type="button"
-              className="text-sm font-semibold text-primary hover:text-primary-dark"
-            >
-              Cargar más
-            </button>
-          </div>
-        </Tarjeta>
+        </div>
       </PageBody>
     </>
   );

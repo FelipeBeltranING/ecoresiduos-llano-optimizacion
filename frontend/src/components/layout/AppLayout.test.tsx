@@ -1,13 +1,24 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { routes } from "@/router";
 
+// Leaflet necesita un navegador real; en jsdom se reemplaza el mapa por un marcador
+vi.mock("@/components/mapa/MapaReal", () => ({
+  MapaReal: () => <div data-testid="mapa-real" />,
+}));
+
 function renderApp(initialPath = "/") {
   const router = createMemoryRouter(routes, { initialEntries: [initialPath] });
-  return render(<RouterProvider router={router} />);
+  const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={cliente}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }
 
 describe("app shell", () => {

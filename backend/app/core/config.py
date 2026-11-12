@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     database_url: str
     test_database_url: str | None = None
     cors_origins: str = "http://localhost:5173"
+    # Distancias viales reales con OSRM al crear nodos (HU-19); sin internet se estima
+    osrm_habilitado: bool = False
+    osrm_url: str = "https://router.project-osrm.org"
 
     def lista_cors(self) -> list[str]:
         origenes = []

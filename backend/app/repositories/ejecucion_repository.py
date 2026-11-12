@@ -46,6 +46,8 @@ def crear_ejecucion(
     tiempo_ms: float,
     parametros: dict | None,
     snapshot_red: dict,
+    escenario_id: uuid.UUID | None = None,
+    violaciones: float | None = None,
 ) -> Ejecucion:
     ejecucion = Ejecucion(
         metodo=metodo,
@@ -54,6 +56,8 @@ def crear_ejecucion(
         tiempo_ms=tiempo_ms,
         parametros=parametros,
         snapshot_red=snapshot_red,
+        escenario_id=escenario_id,
+        violaciones=violaciones,
     )
     sesion.add(ejecucion)
     sesion.flush()

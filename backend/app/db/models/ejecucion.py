@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, Numeric, String, func, text
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,6 +29,10 @@ class Ejecucion(Base):
     tiempo_ms: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     parametros: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     snapshot_red: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    escenario_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("escenario.id", ondelete="SET NULL"), nullable=True
+    )
+    violaciones: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
     creado_en: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )

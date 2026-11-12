@@ -1,377 +1,421 @@
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useState } from "react";
+import { Download, Plus, Power, Upload } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
 
-import { Barra } from "@/components/ui/Barra";
+import {
+  URL_EXPORTAR_RED,
+  useActualizarNodo,
+  useCrearNodo,
+  useDesactivarNodo,
+  useFuentesCasoReal,
+  useImportarRed,
+  useMatriz,
+  useNodos,
+} from "@/api/hooks";
+import type { Nodo, NodoEntrada, TipoNodo } from "@/api/tipos";
+import { MapaReal } from "@/components/mapa/MapaReal";
 import { Boton } from "@/components/ui/Boton";
 import { Campo } from "@/components/ui/Campo";
+import { Cargando, ErrorApi, Vacio } from "@/components/ui/Estado";
 import { Etiqueta } from "@/components/ui/Etiqueta";
 import { PageBody, PageHero } from "@/components/ui/PageHero";
 import { Segmentado } from "@/components/ui/Segmentado";
 import { Tarjeta } from "@/components/ui/Tarjeta";
-import { empresas, plantas, totalCapacidad, totalOferta } from "@/data/red";
-import { formatNumber } from "@/lib/format";
+import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
+import { activos, descargar } from "@/lib/red";
 
-const tabs = [
-  { label: "Empresas", value: "empresas" },
-  { label: "Plantas", value: "plantas" },
-  { label: "Centros de acopio", value: "acopios" },
+const pestanas = [
+  { label: "Empresas", value: "FUENTE" },
+  { label: "Plantas", value: "PLANTA" },
+  { label: "Centros de acopio", value: "ACOPIO" },
 ];
 
-export function RedPage() {
-  const [tab, setTab] = useState("empresas");
-  const [busqueda, setBusqueda] = useState("");
-  const [mostrarTodas, setMostrarTodas] = useState(false);
-  const [formAbierto, setFormAbierto] = useState(false);
+const vacio = {
+  codigo: "",
+  nombre: "",
+  municipio: "",
+  tipo_residuo: "",
+  cantidad: "",
+  costo_operacion_t: "",
+  latitud: "",
+  longitud: "",
+};
 
-  const termino = busqueda.trim().toLowerCase();
-  const filtradas = empresas.filter((empresa) =>
-    `${empresa.codigo} ${empresa.nombre} ${empresa.municipio}`.toLowerCase().includes(termino),
+const numero = (texto: string) => Number(texto.replace(",", "."));
+
+function FilaNodo({ nodo }: { nodo: Nodo }) {
+  const actualizar = useActualizarNodo();
+  const desactivar = useDesactivarNodo();
+  const esFuente = nodo.tipo === "FUENTE";
+  const actual = esFuente ? nodo.oferta_t : nodo.capacidad_t;
+  const [valor, setValor] = useState(String(actual ?? ""));
+
+  const guardar = () => {
+    const nuevo = numero(valor);
+    if (!Number.isFinite(nuevo) || nuevo === actual) return;
+    actualizar.mutate({
+      codigo: nodo.codigo,
+      cambios: esFuente ? { oferta_t: nuevo } : { capacidad_t: nuevo },
+    });
+  };
+
+  return (
+    <tr className={nodo.activo ? "" : "opacity-50"}>
+      <td className="font-semibold text-text">{nodo.codigo}</td>
+      <td>
+        <span className="text-text">{nodo.nombre}</span>
+        <span className="block text-xs text-muted">
+          {nodo.municipio}
+          {nodo.tipo_residuo ? ` · ${nodo.tipo_residuo}` : ""}
+        </span>
+      </td>
+      <td className="text-right">
+        <input
+          aria-label={`${esFuente ? "Oferta" : "Capacidad"} de ${nodo.codigo}`}
+          className="h-8 w-24 rounded-control border border-border bg-surface px-2 text-right text-sm tabular-nums focus:border-primary"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          onBlur={guardar}
+          onKeyDown={(e) => e.key === "Enter" && guardar()}
+          disabled={!nodo.activo}
+        />
+      </td>
+      {!esFuente ? (
+        <td className="text-right tabular-nums">{formatCurrency(nodo.costo_operacion_t)}</td>
+      ) : null}
+      <td className="text-right">
+        {nodo.activo ? (
+          <Boton
+            variante="fantasma"
+            aria-label={`Desactivar ${nodo.codigo}`}
+            icono={<Power className="size-4" aria-hidden="true" />}
+            onClick={() => desactivar.mutate(nodo.codigo)}
+          >
+            <span className="hidden xl:inline">Desactivar</span>
+          </Boton>
+        ) : (
+          <Boton
+            variante="fantasma"
+            onClick={() => actualizar.mutate({ codigo: nodo.codigo, cambios: { activo: true } })}
+          >
+            Activar
+          </Boton>
+        )}
+      </td>
+    </tr>
   );
-  const visiblesMovil = mostrarTodas ? filtradas : filtradas.slice(0, 5);
+}
+
+export function RedPage() {
+  const nodos = useNodos();
+  const matriz = useMatriz();
+  const crear = useCrearNodo();
+  const importar = useImportarRed();
+  const fuentes = useFuentesCasoReal();
+  const [tipo, setTipo] = useState<TipoNodo>("FUENTE");
+  const [form, setForm] = useState(vacio);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
+  const archivo = useRef<HTMLInputElement>(null);
+
+  const nodosActivos = activos(nodos.data);
+  const lista = (nodos.data ?? []).filter((n) => n.tipo === tipo && (mostrarInactivos || n.activo));
+  const empresas = nodosActivos.filter((n) => n.tipo === "FUENTE");
+  const plantas = nodosActivos.filter((n) => n.tipo === "PLANTA");
+  const oferta = empresas.reduce((s, n) => s + (n.oferta_t ?? 0), 0);
+  const capacidad = plantas.reduce((s, n) => s + (n.capacidad_t ?? 0), 0);
+  const esCasoReal = empresas.some((e) => e.codigo.startsWith("R"));
+  const esFuente = tipo === "FUENTE";
+
+  const cambiar = (campo: keyof typeof vacio) => (e: { target: { value: string } }) =>
+    setForm((f) => ({ ...f, [campo]: e.target.value }));
+
+  const enviar = (evento: FormEvent) => {
+    evento.preventDefault();
+    const cantidad = numero(form.cantidad);
+    const entrada: NodoEntrada = {
+      codigo: form.codigo.trim().toUpperCase(),
+      tipo,
+      nombre: form.nombre.trim(),
+      municipio: form.municipio.trim(),
+      tipo_residuo: esFuente ? form.tipo_residuo.trim() || null : null,
+      oferta_t: esFuente ? cantidad : null,
+      capacidad_t: esFuente ? null : cantidad,
+      costo_operacion_t: esFuente ? 0 : numero(form.costo_operacion_t || "0"),
+      latitud: numero(form.latitud),
+      longitud: numero(form.longitud),
+    };
+    crear.mutate(entrada, { onSuccess: () => setForm(vacio) });
+  };
+
+  const punto =
+    form.latitud && form.longitud
+      ? ([numero(form.latitud), numero(form.longitud)] as [number, number])
+      : null;
 
   return (
     <>
       <PageHero
-        eyebrow="Red logística · HU-01"
+        eyebrow="Red logística · HU-01 · HU-02 · HU-05 · HU-18 · HU-19"
         title="Empresas aliadas"
-        description="10 empresas fuente que generan residuos agropecuarios cada semana"
+        description={
+          esCasoReal
+            ? "Caso real: producción EVA 2018 (MinAgricultura), inventario bovino ICA/FNG 2025, coordenadas DIVIPOLA (DANE) y rutas OSRM sobre OpenStreetMap"
+            : "Registre, edite o desactive empresas, plantas y centros de acopio; la red crece sin tocar el código"
+        }
         kpis={[
-          { valor: `${totalOferta} t`, etiqueta: "Oferta total" },
-          { valor: `${totalCapacidad} t`, etiqueta: "Capacidad" },
-          { valor: `${totalCapacidad - totalOferta} t`, etiqueta: "Holgura" },
+          { valor: String(empresas.length), etiqueta: "Empresas activas" },
+          { valor: `${formatNumber(oferta)} t`, etiqueta: "Oferta semanal" },
+          {
+            valor: `${formatNumber(capacidad)} t`,
+            etiqueta: "Capacidad de plantas",
+            tono: oferta > capacidad ? "peligro" : "claro",
+          },
         ]}
+        actions={
+          <>
+            <Boton
+              variante="acento"
+              icono={<Download className="size-4" aria-hidden="true" />}
+              onClick={() => descargar(URL_EXPORTAR_RED)}
+            >
+              Exportar Excel
+            </Boton>
+            <Boton
+              variante="acento"
+              icono={<Upload className="size-4" aria-hidden="true" />}
+              onClick={() => archivo.current?.click()}
+              disabled={importar.isPending}
+            >
+              Importar Excel
+            </Boton>
+            <input
+              ref={archivo}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              aria-label="Archivo Excel de la red"
+              onChange={(e) => {
+                const elegido = e.target.files?.[0];
+                if (elegido) importar.mutate(elegido);
+                e.target.value = "";
+              }}
+            />
+          </>
+        }
       />
 
       <PageBody>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <Segmentado
-            items={tabs}
-            value={tab}
-            onChange={setTab}
-            ariaLabel="Tipo de nodo de la red"
-            className="w-full sm:w-auto"
-          />
+        {importar.data ? (
+          <Tarjeta className="mb-4">
+            {importar.data.importado ? (
+              <Etiqueta>
+                Importado: {importar.data.empresas} empresas, {importar.data.plantas} plantas,{" "}
+                {importar.data.rutas} rutas
+              </Etiqueta>
+            ) : (
+              <>
+                <p className="type-cuerpo-strong text-danger">
+                  No se importó nada: corrija estas filas y vuelva a intentar
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {importar.data.errores.map((error) => (
+                    <li key={`${error.hoja}-${error.fila}-${error.mensaje}`}>
+                      <strong>
+                        {error.hoja}, fila {error.fila}:
+                      </strong>{" "}
+                      {error.mensaje}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </Tarjeta>
+        ) : null}
+        {importar.isError ? <ErrorApi error={importar.error} /> : null}
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
-                aria-hidden="true"
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <Tarjeta relleno="none" className="min-w-0 overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+              <Segmentado
+                items={pestanas}
+                value={tipo}
+                onChange={(v) => setTipo(v as TipoNodo)}
+                ariaLabel="Tipo de nodo"
               />
-              <input
-                type="search"
-                value={busqueda}
-                onChange={(event) => setBusqueda(event.target.value)}
-                placeholder="Buscar empresa o municipio"
-                aria-label="Buscar empresa o municipio"
-                className="h-10 w-full rounded-control border border-border bg-surface pl-9 pr-3 text-sm text-text outline-none placeholder:text-muted/80 focus:border-primary sm:w-[280px]"
-              />
+              <label className="flex items-center gap-2 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={mostrarInactivos}
+                  onChange={(e) => setMostrarInactivos(e.target.checked)}
+                />
+                Ver inactivos
+              </label>
             </div>
-            <div className="hidden sm:block">
-              <Boton onClick={() => setFormAbierto((abierto) => !abierto)}>Nueva empresa</Boton>
-            </div>
-          </div>
-        </div>
-
-        {tab === "empresas" ? (
-          <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
-            <Tarjeta relleno="none" className="overflow-hidden">
-              <div className="hidden overflow-x-auto scroll-fino md:block">
-                <table className="tabla table-fixed">
-                  <colgroup>
-                    <col className="w-16" />
-                    <col />
-                    <col className="w-[160px]" />
-                    <col className="w-[188px]" />
-                    <col className="w-[104px]" />
-                    <col className="w-[64px]" />
-                  </colgroup>
+            <div className="mt-4 overflow-x-auto scroll-fino">
+              {nodos.isLoading ? (
+                <div className="px-5 pb-5">
+                  <Cargando />
+                </div>
+              ) : nodos.isError ? (
+                <div className="px-5 pb-5">
+                  <ErrorApi error={nodos.error} />
+                </div>
+              ) : lista.length ? (
+                <table className="tabla tabla--compacta min-w-[560px]">
                   <thead>
                     <tr>
-                      <th>Código</th>
-                      <th>Empresa</th>
-                      <th>Municipio</th>
-                      <th>Tipo de residuo</th>
-                      <th className="text-right">Oferta (t/sem) ↓</th>
-                      <th>
-                        <span className="sr-only">Acciones</span>
+                      <th className="w-16">Código</th>
+                      <th>Nombre</th>
+                      <th className="w-32 text-right">
+                        {esFuente ? "Oferta (t)" : "Capacidad (t)"}
                       </th>
+                      {!esFuente ? <th className="w-32 text-right">Operación/t</th> : null}
+                      <th className="w-24 text-right">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtradas.map((empresa) => (
-                      <tr key={empresa.codigo}>
-                        <td className="font-semibold text-primary">{empresa.codigo}</td>
-                        <td className="font-medium text-text">{empresa.nombre}</td>
-                        <td className="whitespace-nowrap text-muted">{empresa.municipio}</td>
-                        <td className="whitespace-nowrap text-muted">{empresa.residuo}</td>
-                        <td className="text-right font-semibold tabular-nums text-text">
-                          {empresa.oferta}
-                        </td>
-                        <td className="text-right">
-                          <button
-                            type="button"
-                            className="text-sm font-semibold text-primary hover:text-primary-dark"
-                          >
-                            Editar
-                          </button>
-                        </td>
-                      </tr>
+                    {lista.map((nodo) => (
+                      <FilaNodo
+                        key={`${nodo.codigo}-${nodo.oferta_t}-${nodo.capacidad_t}`}
+                        nodo={nodo}
+                      />
                     ))}
-                    {filtradas.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-10 text-center text-sm text-muted">
-                          No se encontraron empresas con “{busqueda}”.
-                        </td>
-                      </tr>
-                    ) : null}
                   </tbody>
-                  <tfoot>
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="border-t border-border px-3 py-3 text-sm font-semibold text-text"
-                      >
-                        Total de la oferta semanal
-                      </td>
-                      <td className="border-t border-border px-3 py-3 text-right font-semibold tabular-nums text-text">
-                        {totalOferta}
-                      </td>
-                      <td className="border-t border-border py-3 pl-1 pr-3 text-xs text-muted">t</td>
-                    </tr>
-                  </tfoot>
                 </table>
-              </div>
-
-              <div className="divide-y divide-border md:hidden">
-                {visiblesMovil.map((empresa) => (
-                  <article key={empresa.codigo} className="p-3">
-                    <div className="rounded-control border border-border p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="text-xs font-medium leading-4 text-primary">
-                          {empresa.codigo}
-                        </span>
-                        <div className="text-right">
-                          <p className="type-title-15 tabular-nums text-text">
-                            {empresa.oferta} t
-                          </p>
-                          <p className="text-[11px] leading-4 text-muted">por semana</p>
-                        </div>
-                      </div>
-                      <p className="mt-1 type-title-15 text-text">{empresa.nombre}</p>
-                      <p className="mt-1 text-[13px] leading-5 text-muted">
-                        {empresa.municipio} · {empresa.residuo}
-                      </p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              {!mostrarTodas && filtradas.length > 5 ? (
-                <div className="px-3 pb-3 md:hidden">
-                  <Boton
-                    variante="secundario"
-                    className="w-full"
-                    onClick={() => setMostrarTodas(true)}
-                  >
-                    Mostrar las {filtradas.length - 5} restantes
-                  </Boton>
+              ) : (
+                <div className="px-5 pb-5">
+                  <Vacio>No hay nodos de este tipo.</Vacio>
                 </div>
-              ) : null}
+              )}
+            </div>
+          </Tarjeta>
 
-              <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs leading-4 text-muted">
-                  Mostrando 1–{filtradas.length} de {filtradas.length} empresas
-                </p>
-                <div className="hidden items-center gap-1 sm:flex">
-                  <button
-                    type="button"
-                    aria-label="Página anterior"
-                    disabled
-                    className="grid size-8 place-items-center rounded-control border border-border text-muted disabled:opacity-50"
-                  >
-                    <ChevronLeft className="size-4" aria-hidden="true" />
-                  </button>
-                  <span className="grid size-8 place-items-center rounded-control bg-primary text-sm font-semibold text-white">
-                    1
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Página siguiente"
-                    disabled
-                    className="grid size-8 place-items-center rounded-control border border-border text-muted disabled:opacity-50"
-                  >
-                    <ChevronRight className="size-4" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="px-3 pb-3 sm:hidden">
-                <Boton
-                  className="w-full"
-                  onClick={() => setFormAbierto((abierto) => !abierto)}
-                  aria-expanded={formAbierto}
-                >
-                  Nueva empresa
-                </Boton>
-              </div>
-            </Tarjeta>
-
-            <Tarjeta className={formAbierto ? "block" : "hidden xl:block"}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="type-title-22 text-text">Nueva empresa</h2>
-                  <p className="mt-1 max-w-sm text-xs leading-4 text-muted">
-                    Los campos con * son obligatorios. Se valida mientras escribe.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFormAbierto(false)}
-                  className="text-sm font-semibold text-muted hover:text-text xl:hidden"
-                >
-                  Cerrar
-                </button>
-              </div>
-
-              <form
-                className="mt-4 flex flex-col gap-4"
-                onSubmit={(event) => event.preventDefault()}
-              >
-                <Campo etiqueta="Código *" defaultValue="E11" estado="exito" ayuda="Código disponible" />
-                <Campo
-                  etiqueta="Nombre de la empresa *"
-                  defaultValue="Porcícola La Sabana"
-                  estado="exito"
-                  ayuda="Nombre único en la red"
-                />
-                <Campo etiqueta="Municipio *" defaultValue="Guamal" ayuda="Municipio del Meta" />
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="tipo-residuo" className="type-label text-text">
-                    Tipo de residuo *
-                  </label>
-                  <select
-                    id="tipo-residuo"
-                    defaultValue="ganaderia"
-                    className="h-10 w-full rounded-control border border-border bg-surface px-3 text-sm text-text outline-none focus:border-primary"
-                  >
-                    <option value="ganaderia">Ganadería (estiércol)</option>
-                    <option value="palma">Palma (raquis, fibra)</option>
-                    <option value="arroz">Arroz (cascarilla)</option>
-                    <option value="forestal">Forestal (aserrín, corteza)</option>
-                  </select>
-                  <p className="text-xs leading-4 text-muted">Define el uso del residuo</p>
-                </div>
-
-                <Campo
-                  etiqueta="Oferta semanal (t) *"
-                  type="number"
-                  defaultValue={0}
-                  estado="error"
-                  ayuda="La oferta debe ser mayor que 0"
-                />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Campo
-                    etiqueta="Latitud"
-                    defaultValue="3.88"
-                    estado="exito"
-                    ayuda="Válida"
-                  />
-                  <Campo
-                    etiqueta="Longitud"
-                    placeholder="Ej. −73.77"
-                    estado="error"
-                    ayuda="Requerida para el mapa"
-                  />
-                </div>
-
-                <div className="rounded-card bg-primary-soft p-4">
-                  <p className="type-title-15 text-primary-dark">Efecto en la red</p>
-                  <p className="mt-1 text-xs leading-4 text-primary-dark/80">
-                    Con 0 t la oferta sigue en 890 t frente a 950 t de capacidad. Si la oferta
-                    supera la capacidad, se agrega una planta ficticia con la diferencia.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap justify-end gap-2">
-                  <Boton variante="secundario" onClick={() => setFormAbierto(false)}>
-                    Cancelar
-                  </Boton>
-                  <Boton type="submit">Guardar empresa</Boton>
-                </div>
-              </form>
-            </Tarjeta>
-          </div>
-        ) : null}
-
-        {tab === "plantas" ? (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {plantas.map((planta) => {
-              const porcentaje = Math.round((planta.uso / planta.capacidad) * 100);
-              return (
-                <Tarjeta key={planta.codigo}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs font-medium leading-4 text-primary">{planta.codigo}</p>
-                      <h2 className="mt-1 type-title-18 text-text">{planta.nombre}</h2>
-                    </div>
-                    <Etiqueta variante={planta.saturada ? "peligro" : "exito"}>
-                      {planta.saturada ? "Saturada" : "Con holgura"}
-                    </Etiqueta>
-                  </div>
-                  <p className="mt-4 type-cifra-28 tabular-nums text-text">
-                    {planta.uso} / {planta.capacidad} t
-                  </p>
-                  <Barra
-                    valor={planta.uso / planta.capacidad}
-                    tono={planta.saturada ? "peligro" : "primario"}
-                    className="mt-3"
-                    etiqueta={`Uso de ${planta.nombre}`}
-                  />
-                  <dl className="mt-4 space-y-2 text-xs leading-4">
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-muted">Ocupación</dt>
-                      <dd className="font-semibold tabular-nums text-text">{porcentaje} %</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-muted">Costo de operación</dt>
-                      <dd className="font-semibold tabular-nums text-text">
-                        ${formatNumber(planta.operacion)} / t
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-muted">Precio sombra</dt>
-                      <dd
-                        className={[
-                          "font-semibold tabular-nums",
-                          planta.precioSombra < 0 ? "text-danger" : "text-text",
-                        ].join(" ")}
-                      >
-                        {planta.precioSombra < 0
-                          ? `−$${formatNumber(-planta.precioSombra)}`
-                          : "$0"}
-                      </dd>
-                    </div>
-                  </dl>
-                </Tarjeta>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {tab === "acopios" ? (
-          <Tarjeta className="mt-6">
-            <h2 className="type-title-18 text-text">Centros de acopio</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-5 text-muted">
-              Todavía no hay centros de acopio configurados. En el caso base, las 10 empresas
-              entregan directamente a las 4 plantas de procesamiento, por lo que esta capa no
-              altera el óptimo.
+          <Tarjeta>
+            <h2 className="type-title-15 text-text">Mapa real de la red</h2>
+            <p className="mt-1 text-xs text-muted">
+              Clic en el mapa para ubicar el nodo nuevo. Trazados viales de OSRM.
             </p>
-            <div className="mt-4 rounded-card border border-dashed border-border bg-bg p-6 text-sm text-muted">
-              Agregue un centro de acopio para consolidar la oferta de varias empresas antes de
-              enviarla a una planta.
+            <div className="mt-3">
+              <MapaReal
+                nodos={nodosActivos}
+                rutas={matriz.data?.rutas}
+                mostrarRutas
+                alto="h-[380px]"
+                puntoNuevo={punto}
+                onClicMapa={(lat, lon) =>
+                  setForm((f) => ({ ...f, latitud: lat.toFixed(5), longitud: lon.toFixed(5) }))
+                }
+              />
+            </div>
+          </Tarjeta>
+        </div>
+
+        <Tarjeta className="mt-4">
+          <h2 className="type-title-18 text-text">
+            Agregar {esFuente ? "empresa" : tipo === "PLANTA" ? "planta" : "centro de acopio"}
+          </h2>
+          <p className="mt-1 text-xs text-muted">
+            Las rutas hacia (o desde) los demás nodos se crean solas con la distancia vial real
+            (OSRM) o, sin conexión, con Haversine × 1,3.
+          </p>
+          <form className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={enviar}>
+            <Campo
+              etiqueta="Código"
+              value={form.codigo}
+              onChange={cambiar("codigo")}
+              required
+              maxLength={10}
+              placeholder="E11"
+            />
+            <Campo etiqueta="Nombre" value={form.nombre} onChange={cambiar("nombre")} required />
+            <Campo
+              etiqueta="Municipio"
+              value={form.municipio}
+              onChange={cambiar("municipio")}
+              required
+            />
+            {esFuente ? (
+              <Campo
+                etiqueta="Tipo de residuo"
+                value={form.tipo_residuo}
+                onChange={cambiar("tipo_residuo")}
+              />
+            ) : (
+              <Campo
+                etiqueta="Costo de operación (COP/t)"
+                value={form.costo_operacion_t}
+                onChange={cambiar("costo_operacion_t")}
+                inputMode="decimal"
+              />
+            )}
+            <Campo
+              etiqueta={esFuente ? "Oferta (t/semana)" : "Capacidad (t/semana)"}
+              value={form.cantidad}
+              onChange={cambiar("cantidad")}
+              required
+              inputMode="decimal"
+            />
+            <Campo
+              etiqueta="Latitud"
+              value={form.latitud}
+              onChange={cambiar("latitud")}
+              required
+              inputMode="decimal"
+            />
+            <Campo
+              etiqueta="Longitud"
+              value={form.longitud}
+              onChange={cambiar("longitud")}
+              required
+              inputMode="decimal"
+            />
+            <div className="flex items-end">
+              <Boton
+                type="submit"
+                disabled={crear.isPending}
+                icono={<Plus className="size-4" aria-hidden="true" />}
+              >
+                {crear.isPending ? "Guardando…" : "Agregar"}
+              </Boton>
+            </div>
+          </form>
+          {crear.isError ? (
+            <div className="mt-3">
+              <ErrorApi error={crear.error} />
+            </div>
+          ) : null}
+        </Tarjeta>
+
+        {esCasoReal && fuentes.data ? (
+          <Tarjeta relleno="none" className="mt-4 overflow-hidden">
+            <div className="px-5 pt-5">
+              <h2 className="type-title-18 text-text">Origen de los datos del caso real</h2>
+              <p className="mt-1 text-xs text-muted">{fuentes.data.descripcion}</p>
+            </div>
+            <div className="mt-4 overflow-x-auto scroll-fino">
+              <table className="tabla tabla--compacta min-w-[640px]">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Municipio</th>
+                    <th className="text-right">Producción</th>
+                    <th>Unidad (fuente)</th>
+                    <th className="text-right">Residuo anual (t)</th>
+                    <th className="text-right">Captación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fuentes.data.empresas.map((e) => (
+                    <tr key={e.codigo}>
+                      <td className="font-semibold">{e.codigo}</td>
+                      <td>{e.municipio}</td>
+                      <td className="text-right tabular-nums">{formatNumber(e.produccion)}</td>
+                      <td className="text-xs text-muted">{e.unidad}</td>
+                      <td className="text-right tabular-nums">{formatNumber(e.residuo_anual_t)}</td>
+                      <td className="text-right tabular-nums">{formatPercent(e.captacion, 1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Tarjeta>
         ) : null}

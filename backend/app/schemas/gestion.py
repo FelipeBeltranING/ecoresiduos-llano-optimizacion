@@ -59,6 +59,10 @@ class RutaSalida(BaseModel):
     costo_km_t: float | None
     habilitada: bool
     costo_unitario: float | None
+    duracion_min: float | None = None
+    fuente_distancia: str | None = None
+    # Polilínea codificada (formato de Google, precisión 5) del trazado vial
+    geometria: str | None = None
 
 
 class MatrizRutas(BaseModel):

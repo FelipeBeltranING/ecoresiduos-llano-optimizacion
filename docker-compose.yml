@@ -1,11 +1,11 @@
 # Entorno local del proyecto Orion.
-#   docker compose up -d db      → PostgreSQL 15 en localhost:5432
-#   docker compose down -v       → borra el contenedor y los datos
-# El servicio de la API se agrega en T-02 (Dockerfile del backend).
+#   docker compose up -d          → PostgreSQL 17 (localhost:5432) y la API (localhost:8000)
+#   docker compose up -d db       → solo la base de datos
+#   docker compose down -v        → borra los contenedores y los datos
 
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: orion-db
     restart: unless-stopped
     environment:
@@ -21,6 +21,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build: ./backend
+    container_name: orion-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-orion}:${POSTGRES_PASSWORD:-orion}@db:5432/${POSTGRES_DB:-ecoresiduos}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      OSRM_HABILITADO: ${OSRM_HABILITADO:-true}
+    ports:
+      - "8000:8000"
 
 volumes:
   pgdata:
