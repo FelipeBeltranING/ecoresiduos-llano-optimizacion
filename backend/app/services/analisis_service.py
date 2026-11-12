@@ -4,6 +4,7 @@ import uuid
 from dataclasses import replace
 from datetime import datetime
 
+import numpy as np
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
 
@@ -17,7 +18,9 @@ from app.db.models.analisis import (
     Analisis,
 )
 from app.optimizacion import contratos
+from app.optimizacion.contratos import ParametrosAG
 from app.optimizacion.instancias import generar_instancia
+from app.optimizacion.red import RedLogistica
 from app.optimizacion.sensibilidad.analizador import Ajuste, aplicar_ajustes, balancear
 from app.optimizacion.verificador import verificar_solucion
 from app.repositories import parametro_repository
@@ -114,79 +117,162 @@ def red_para_comparar(sesion: Session, escenario_id: uuid.UUID | None):
     return balancear(aplicar_ajustes(red, [Ajuste(**a) for a in escenario.ajustes]), penalizacion)
 
 
+# Escenarios a comparar: el campo singular se conserva por compatibilidad
+def ids_de_escenarios(datos: ComparacionEntrada) -> list[uuid.UUID]:
+    ids: list[uuid.UUID] = []
+    if datos.escenario_id is not None:
+        ids.append(datos.escenario_id)
+    ids.extend(escenario for escenario in datos.escenarios if escenario not in ids)
+    return ids
+
+
+# Porcentaje de toneladas que cambian de planta frente a la red base
+def cambio_de_asignacion(flujos_base: np.ndarray, flujos: np.ndarray) -> float:
+    base = np.asarray(flujos_base, dtype=float)
+    actual = np.asarray(flujos, dtype=float)
+    # Una red puede agregar la planta ficticia y la otra no; se comparan las
+    # plantas reales comunes para que el cambio de asignación sea comparable.
+    if base.ndim == 2 and actual.ndim == 2 and base.shape[1] != actual.shape[1]:
+        columnas = min(base.shape[1], actual.shape[1])
+        base = base[:, :columnas]
+        actual = actual[:, :columnas]
+    total = float(np.abs(base).sum() + np.abs(actual).sum())
+    if total <= 0:
+        return 0.0
+    return float(np.abs(base - actual).sum()) / total * 100
+
+
+# Exacto + N corridas del AG sobre una red; devuelve el bloque del reporte
+def evaluar_red(
+    sesion: Session,
+    red: RedLogistica,
+    escenario_id: uuid.UUID | None,
+    parametros: ParametrosAG,
+    corridas: int,
+) -> dict:
+    solucion = contratos.resolver_exacto(red)
+    exacto = ejecucion_service.ejecutar_exacto(sesion, red, escenario_id, solucion)
+    optimo = float(solucion.costo_total)
+    semilla_base = parametros.semilla or 0
+
+    corridas_ag = []
+    mejor = None
+    for k in range(corridas):
+        resultado = contratos.ejecutar_genetico(red, replace(parametros, semilla=semilla_base + k))
+        corridas_ag.append(
+            {
+                "semilla": semilla_base + k,
+                "costo": resultado.costo_total,
+                "tiempo_ms": resultado.tiempo_ms,
+                "violaciones": ejecucion_service.violaciones_de(red, resultado),
+                "generaciones": len(resultado.convergencia),
+                "gap": _gap(resultado.costo_total, optimo),
+            }
+        )
+        if mejor is None or resultado.costo_total < mejor[1].costo_total:
+            mejor = (semilla_base + k, resultado)
+
+    mejor_ejecucion = ejecucion_service.guardar_genetico(
+        sesion, red, replace(parametros, semilla=mejor[0]), mejor[1], escenario_id
+    )
+    costos = [c["costo"] for c in corridas_ag]
+    tiempos = [c["tiempo_ms"] for c in corridas_ag]
+    return {
+        "exacto": {
+            "ejecucion_id": str(exacto.id),
+            "costo": optimo,
+            "tiempo_ms": float(exacto.tiempo_ms),
+            "violaciones": float(exacto.violaciones or 0),
+            "estado": exacto.estado,
+        },
+        "ag": {
+            "mejor_ejecucion_id": str(mejor_ejecucion.id),
+            "mejor": min(costos),
+            "peor": max(costos),
+            "promedio": statistics.fmean(costos),
+            "desviacion": statistics.pstdev(costos),
+            "gap_mejor": _gap(min(costos), optimo),
+            "gap_promedio": _gap(statistics.fmean(costos), optimo),
+            "tiempo_promedio_ms": statistics.fmean(tiempos),
+            "violaciones_max": max(c["violaciones"] for c in corridas_ag),
+            "corridas": corridas_ag,
+            "convergencia_mejor": [
+                {
+                    "generacion": r.generacion,
+                    "mejor": r.mejor_costo,
+                    "promedio": r.costo_promedio,
+                }
+                for r in mejor[1].convergencia
+            ],
+        },
+        "flujos": solucion.flujos,
+    }
+
+
+# Una fila del reporte comparativo por escenario (HU-13)
+def fila_comparacion(
+    escenario_id: uuid.UUID | None,
+    nombre: str,
+    evaluacion: dict,
+    flujos_base: np.ndarray | None,
+) -> dict:
+    optimo = evaluacion["exacto"]["costo"]
+    mejor = evaluacion["ag"]["mejor"]
+    return {
+        "escenario_id": None if escenario_id is None else str(escenario_id),
+        "nombre": nombre,
+        "z_exacto": optimo,
+        "z_ag": mejor,
+        "gap": _gap(mejor, optimo),
+        "tiempo_exacto_ms": evaluacion["exacto"]["tiempo_ms"],
+        "tiempo_ag_ms": evaluacion["ag"]["tiempo_promedio_ms"],
+        "cambio_asignacion": (
+            0.0 if flujos_base is None else cambio_de_asignacion(flujos_base, evaluacion["flujos"])
+        ),
+    }
+
+
 def ejecutar_comparacion(motor: Engine, analisis_id: uuid.UUID, entrada: dict) -> None:
     datos = ComparacionEntrada(**entrada)
     try:
         with Session(bind=motor) as sesion:
-            red = red_para_comparar(sesion, datos.escenario_id)
-            exacto = ejecucion_service.ejecutar_exacto(sesion, red, datos.escenario_id)
-            optimo = float(exacto.costo_total)
-
             parametros = ejecucion_service.convertir_parametros_ag(sesion, datos.parametros_ag)
-            semilla_base = parametros.semilla or 0
-            corridas = []
-            mejor = None
-            for k in range(datos.corridas):
-                resultado = contratos.ejecutar_genetico(
-                    red, replace(parametros, semilla=semilla_base + k)
-                )
-                violaciones = ejecucion_service.violaciones_de(red, resultado)
-                corridas.append(
-                    {
-                        "semilla": semilla_base + k,
-                        "costo": resultado.costo_total,
-                        "tiempo_ms": resultado.tiempo_ms,
-                        "violaciones": violaciones,
-                        "generaciones": len(resultado.convergencia),
-                        "gap": _gap(resultado.costo_total, optimo),
-                    }
-                )
-                if mejor is None or resultado.costo_total < mejor[1].costo_total:
-                    mejor = (semilla_base + k, resultado)
+            red_base = ejecucion_service.preparar_red(sesion)
+            base = evaluar_red(sesion, red_base, None, parametros, datos.corridas)
+            filas = [fila_comparacion(None, "Caso base", base, None)]
 
-            mejor_ejecucion = ejecucion_service.guardar_genetico(
-                sesion,
-                red,
-                replace(parametros, semilla=mejor[0]),
-                mejor[1],
-                datos.escenario_id,
-            )
-            costos = [c["costo"] for c in corridas]
-            tiempos = [c["tiempo_ms"] for c in corridas]
+            evaluados: dict[uuid.UUID, dict] = {}
+            for escenario_id in ids_de_escenarios(datos):
+                escenario = sesion.get(Escenario, escenario_id)
+                if escenario is None:
+                    raise AnalisisNoEncontradoError(f"No existe el escenario {escenario_id}")
+                evaluacion = evaluar_red(
+                    sesion,
+                    red_para_comparar(sesion, escenario_id),
+                    escenario_id,
+                    parametros,
+                    datos.corridas,
+                )
+                evaluados[escenario_id] = evaluacion
+                filas.append(
+                    fila_comparacion(escenario_id, escenario.nombre, evaluacion, base["flujos"])
+                )
+
+            # Con un único escenario el reporte principal sigue siendo ese escenario
+            principal = base
+            if datos.escenario_id is not None and not datos.escenarios:
+                principal = evaluados[datos.escenario_id]
+
             resultado = {
-                "exacto": {
-                    "ejecucion_id": str(exacto.id),
-                    "costo": optimo,
-                    "tiempo_ms": float(exacto.tiempo_ms),
-                    "violaciones": float(exacto.violaciones or 0),
-                    "estado": exacto.estado,
-                },
-                "ag": {
-                    "mejor_ejecucion_id": str(mejor_ejecucion.id),
-                    "mejor": min(costos),
-                    "peor": max(costos),
-                    "promedio": statistics.fmean(costos),
-                    "desviacion": statistics.pstdev(costos),
-                    "gap_mejor": _gap(min(costos), optimo),
-                    "gap_promedio": _gap(statistics.fmean(costos), optimo),
-                    "tiempo_promedio_ms": statistics.fmean(tiempos),
-                    "violaciones_max": max(c["violaciones"] for c in corridas),
-                    "corridas": corridas,
-                    "convergencia_mejor": [
-                        {
-                            "generacion": r.generacion,
-                            "mejor": r.mejor_costo,
-                            "promedio": r.costo_promedio,
-                        }
-                        for r in mejor[1].convergencia
-                    ],
-                },
+                "exacto": principal["exacto"],
+                "ag": principal["ag"],
                 "red": {
-                    "empresas": red.numero_empresas(),
-                    "plantas": red.numero_plantas(),
-                    "acopios": red.numero_acopios(),
-                    "usa_planta_ficticia": red.tiene_planta_ficticia(),
+                    "empresas": red_base.numero_empresas(),
+                    "plantas": red_base.numero_plantas(),
+                    "acopios": red_base.numero_acopios(),
+                    "usa_planta_ficticia": red_base.tiene_planta_ficticia(),
                 },
+                "filas": filas,
             }
         _terminar(motor, analisis_id, ESTADO_TERMINADO, resultado)
     except Exception as error:  # noqa: BLE001 - el error se guarda para la interfaz
@@ -230,12 +316,16 @@ def ejecutar_escalabilidad(motor: Engine, analisis_id: uuid.UUID, entrada: dict)
 def iniciar(
     sesion: Session, tipo: str, entrada: ComparacionEntrada | EscalabilidadEntrada
 ) -> Analisis:
-    escenario_id = getattr(entrada, "escenario_id", None)
-    if escenario_id is not None and sesion.get(Escenario, escenario_id) is None:
-        raise AnalisisNoEncontradoError(f"No existe el escenario {escenario_id}")
+    ids = ids_de_escenarios(entrada) if isinstance(entrada, ComparacionEntrada) else []
+    for escenario_id in ids:
+        if sesion.get(Escenario, escenario_id) is None:
+            raise AnalisisNoEncontradoError(f"No existe el escenario {escenario_id}")
     if tipo == TIPO_COMPARACION:
         ejecucion_service.preparar_red(sesion)
-    return crear_registro(sesion, tipo, entrada.model_dump(mode="json"), escenario_id)
+    # El registro guarda un escenario solo cuando la comparación es de uno
+    return crear_registro(
+        sesion, tipo, entrada.model_dump(mode="json"), ids[0] if len(ids) == 1 else None
+    )
 
 
 TAREAS = {TIPO_COMPARACION: ejecutar_comparacion, TIPO_ESCALABILIDAD: ejecutar_escalabilidad}
