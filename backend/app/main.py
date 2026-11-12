@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routers import (
     analisis,
+    criticidad,
     datos,
     ejecuciones,
     health,
@@ -42,3 +43,4 @@ app.include_router(ejecuciones.router, prefix=PREFIJO_API)
 app.include_router(sensibilidad.router, prefix=PREFIJO_API)
 app.include_router(analisis.router, prefix=PREFIJO_API)
 app.include_router(reportes.router, prefix=PREFIJO_API)
+app.include_router(criticidad.router, prefix=PREFIJO_API)
