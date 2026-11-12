@@ -1,4 +1,4 @@
-import { ArrowRight, Database, MapPinned } from "lucide-react";
+import { ArrowRight, Database, MapPinned, Warehouse } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useCargarCaso, useMatriz, useNodos, useUltimaEjecucion, useValidacion } from "@/api/hooks";
@@ -104,6 +104,15 @@ export function PanelPage() {
                   onClick={() => cargarCaso.mutate("caso-real")}
                 >
                   Cargar caso real del Meta
+                </Boton>
+                <Boton
+                  variante="acento"
+                  icono={<Warehouse className="size-4" aria-hidden="true" />}
+                  disabled={cargarCaso.isPending}
+                  onClick={() => cargarCaso.mutate("acopios")}
+                  title="Agrega los centros de acopio de Puerto López y San Martín a la red activa"
+                >
+                  Agregar centros de acopio
                 </Boton>
               </div>
               {cargarCaso.isError ? (

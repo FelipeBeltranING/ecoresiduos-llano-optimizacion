@@ -37,6 +37,9 @@ class SolucionLP:
     flujos: np.ndarray
     duales_oferta: np.ndarray
     duales_capacidad: np.ndarray
+    # Flujos por camino y duales de todos los recursos (plantas y luego acopios)
+    flujos_caminos: np.ndarray | None = None
+    duales_recursos: np.ndarray | None = None
 
 
 # Con acopios se resuelve por caminos; los flujos se devuelven por planta final (m x n)
@@ -66,6 +69,8 @@ def resolver_lp(red: RedLogistica) -> SolucionLP | None:
         flujos=flujo_a_planta_final(red, flujos_caminos),
         duales_oferta=np.array(res.eqlin.marginals),
         duales_capacidad=np.array(res.ineqlin.marginals)[:n],
+        flujos_caminos=flujos_caminos,
+        duales_recursos=np.array(res.ineqlin.marginals),
     )
 
 

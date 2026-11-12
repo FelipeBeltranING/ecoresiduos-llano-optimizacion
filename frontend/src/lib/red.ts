@@ -43,6 +43,20 @@ export function formatoFecha(iso: string): string {
   );
 }
 
+/** Toneladas que entran a cada centro de acopio activo frente a su capacidad (HU-17). */
+export function usoDeAcopios(nodos: Nodo[], flujos: Flujo[]): Record<string, UsoPlanta> {
+  const uso: Record<string, UsoPlanta> = {};
+  for (const nodo of nodos) {
+    if (nodo.tipo === "ACOPIO" && nodo.activo) {
+      uso[nodo.codigo] = { uso: 0, capacidad: nodo.capacidad_t ?? 0 };
+    }
+  }
+  for (const flujo of flujos) {
+    if (uso[flujo.destino]) uso[flujo.destino].uso += flujo.toneladas;
+  }
+  return uso;
+}
+
 /** La ejecución corresponde a la red activa si envía flujo desde exactamente las mismas empresas. */
 export function ejecucionVigente(flujos: Flujo[], nodos: Nodo[]): boolean {
   const empresas = new Set(
@@ -50,7 +64,9 @@ export function ejecucionVigente(flujos: Flujo[], nodos: Nodo[]): boolean {
       .filter((n) => n.activo && n.tipo === "FUENTE" && (n.oferta_t ?? 0) > 0)
       .map((n) => n.codigo),
   );
-  const origenes = new Set(flujos.map((f) => f.origen));
+  // Los acopios también envían flujo (acopio → planta), pero no son empresas
+  const acopios = new Set(nodos.filter((n) => n.tipo === "ACOPIO").map((n) => n.codigo));
+  const origenes = new Set(flujos.map((f) => f.origen).filter((codigo) => !acopios.has(codigo)));
   if (empresas.size !== origenes.size) return false;
   return [...origenes].every((codigo) => empresas.has(codigo));
 }
