@@ -221,11 +221,15 @@ def guardar_sensibilidad_exacto(
 
 # Ejecución del modelo exacto y guardado de su resultado
 def ejecutar_exacto(
-    sesion: Session, red: RedLogistica | None = None, escenario_id: uuid.UUID | None = None
+    sesion: Session,
+    red: RedLogistica | None = None,
+    escenario_id: uuid.UUID | None = None,
+    resultado: ResultadoExacto | None = None,
 ) -> Ejecucion:
     if red is None:
         red = preparar_red(sesion)
-    resultado = contratos.resolver_exacto(red)
+    if resultado is None:
+        resultado = contratos.resolver_exacto(red)
     violaciones = violaciones_de(red, resultado)
 
     try:
