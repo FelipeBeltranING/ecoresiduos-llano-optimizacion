@@ -3,6 +3,29 @@
 import numpy as np
 
 
+# Capacidad por recursos (HU-17): sin acopios cada camino es una planta y usa solo ese recurso.
+# Con acopios, el camino empresa → acopio → planta consume cupo del acopio y de la planta.
+class Recursos:
+    def __init__(self, n_caminos: int, recursos: np.ndarray = None):
+        self.matriz = recursos
+        self.n = n_caminos
+
+    def de(self, camino: int) -> np.ndarray:
+        if self.matriz is None:
+            return np.array([camino])
+        return np.flatnonzero(self.matriz[:, camino])
+
+    def uso(self, flujo_por_camino: np.ndarray) -> np.ndarray:
+        if self.matriz is None:
+            return flujo_por_camino
+        return self.matriz.astype(float) @ flujo_por_camino
+
+    def caminos_que_usan(self, recurso: int) -> np.ndarray:
+        if self.matriz is None:
+            return np.array([recurso])
+        return np.flatnonzero(self.matriz[recurso])
+
+
 class Individuo:
     def __init__(self, flujos: np.ndarray):
         # El cromosoma se almacena como matriz bidimensional m x n
@@ -29,12 +52,14 @@ class InicializadorAG:
         matriz_costos: np.ndarray,
         semilla: int = None,
         habilitadas: np.ndarray = None,
+        recursos: np.ndarray = None,
     ):
         self.a = oferta
         self.b = capacidad
         self.C = matriz_costos
         self.m = len(oferta)
-        self.n = len(capacidad)
+        self.n = matriz_costos.shape[1]
+        self.recursos = Recursos(self.n, recursos)
         if habilitadas is None:
             habilitadas = np.ones((self.m, self.n), dtype=bool)
         self.habilitadas = habilitadas
@@ -62,11 +87,13 @@ class InicializadorAG:
         for i, j in rutas_ordenadas:
             if not self.habilitadas[i, j]:
                 continue
-            if oferta_restante[i] > 0 and capacidad_restante[j] > 0:
-                cantidad = min(oferta_restante[i], capacidad_restante[j])
+            usados = self.recursos.de(j)
+            cupo = capacidad_restante[usados].min()
+            if oferta_restante[i] > 0 and cupo > 0:
+                cantidad = min(oferta_restante[i], cupo)
                 flujos[i, j] = cantidad
                 oferta_restante[i] -= cantidad
-                capacidad_restante[j] -= cantidad
+                capacidad_restante[usados] -= cantidad
 
         for i in range(self.m):
             if oferta_restante[i] > 0:
@@ -98,11 +125,13 @@ class EvaluadorAG:
         matriz_costos: np.ndarray,
         lambda_pen: float = 1e6,
         habilitadas: np.ndarray = None,
+        recursos: np.ndarray = None,
     ):
         self.a = oferta
         self.b = capacidad
         self.C = matriz_costos
         self.lambda_pen = lambda_pen
+        self.recursos = Recursos(matriz_costos.shape[1], recursos)
         if habilitadas is None:
             habilitadas = np.ones(matriz_costos.shape, dtype=bool)
         self.habilitadas = habilitadas
@@ -123,36 +152,48 @@ class EvaluadorAG:
             columnas = np.flatnonzero(self.habilitadas[i])
             flujos_reparados[i, columnas] = self.a[i] / len(columnas)
 
-        # 3) Saca el exceso de las plantas saturadas hacia la planta más barata con cupo
-        usada = flujos_reparados.sum(axis=0)
-        for j in np.flatnonzero(usada > self.b + 1e-9):
-            exceso = usada[j] - self.b[j]
-            filas = np.flatnonzero(flujos_reparados[:, j] > 0)
-            # Primero mueve lo de las empresas que menos pierden al cambiar de planta
-            filas = sorted(filas, key=lambda i: self._costo_alternativo(i, j, usada))
-            for i in filas:
-                if exceso <= 1e-9:
-                    break
-                for destino in self.orden_por_costo[i]:
-                    if exceso <= 1e-9 or flujos_reparados[i, j] <= 1e-12:
+        # 3) Saca el exceso de las plantas (o acopios) saturados hacia el camino más barato con cupo
+        usada = self.recursos.uso(flujos_reparados.sum(axis=0))
+        for r in np.flatnonzero(usada > self.b + 1e-9):
+            exceso = usada[r] - self.b[r]
+            for j in self.recursos.caminos_que_usan(r):
+                filas = np.flatnonzero(flujos_reparados[:, j] > 0)
+                # Primero mueve lo de las empresas que menos pierden al cambiar de camino
+                filas = sorted(filas, key=lambda i, j=j: self._costo_alternativo(i, j, r, usada))
+                for i in filas:
+                    if exceso <= 1e-9:
                         break
-                    if destino == j or not self.habilitadas[i, destino]:
-                        continue
-                    cupo = self.b[destino] - usada[destino]
-                    if cupo <= 1e-9:
-                        continue
-                    mover = min(cupo, exceso, flujos_reparados[i, j])
-                    flujos_reparados[i, j] -= mover
-                    flujos_reparados[i, destino] += mover
-                    usada[j] -= mover
-                    usada[destino] += mover
-                    exceso -= mover
+                    for destino in self.orden_por_costo[i]:
+                        if exceso <= 1e-9 or flujos_reparados[i, j] <= 1e-12:
+                            break
+                        if not self._es_alternativa(i, destino, r):
+                            continue
+                        cupo = self._cupo(destino, usada)
+                        if cupo <= 1e-9:
+                            continue
+                        mover = min(cupo, exceso, flujos_reparados[i, j])
+                        flujos_reparados[i, j] -= mover
+                        flujos_reparados[i, destino] += mover
+                        usada[self.recursos.de(j)] -= mover
+                        usada[self.recursos.de(destino)] += mover
+                        exceso -= mover
 
         return flujos_reparados
 
-    def _costo_alternativo(self, i: int, j: int, usada: np.ndarray) -> float:
+    # Un camino sirve de alternativa si está habilitado y no usa el recurso saturado
+    def _es_alternativa(self, i: int, destino: int, recurso: int) -> bool:
+        if not self.habilitadas[i, destino]:
+            return False
+        return recurso not in self.recursos.de(destino)
+
+    # Cupo de un camino = el menor cupo entre los recursos que usa
+    def _cupo(self, camino: int, usada: np.ndarray) -> float:
+        usados = self.recursos.de(camino)
+        return float((self.b[usados] - usada[usados]).min())
+
+    def _costo_alternativo(self, i: int, j: int, recurso: int, usada: np.ndarray) -> float:
         for destino in self.orden_por_costo[i]:
-            if destino != j and self.habilitadas[i, destino] and usada[destino] < self.b[destino]:
+            if self._es_alternativa(i, destino, recurso) and self._cupo(destino, usada) > 0:
                 return self.C[i, destino] - self.C[i, j]
         return np.inf
 
@@ -164,7 +205,7 @@ class EvaluadorAG:
         individuo.costo_total = float(np.sum(individuo.cromosoma * self.C))
 
         oferta_asignada = np.sum(individuo.cromosoma, axis=1)
-        capacidad_usada = np.sum(individuo.cromosoma, axis=0)
+        capacidad_usada = self.recursos.uso(np.sum(individuo.cromosoma, axis=0))
 
         violacion_oferta = np.sum(np.abs(oferta_asignada - self.a))
 

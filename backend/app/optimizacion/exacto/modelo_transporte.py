@@ -14,7 +14,7 @@ ESTADOS_PULP = {
 }
 
 
-# Modelo de transporte con PuLP + CBC (HU-07)
+# Flujo de costo mínimo con PuLP + CBC (HU-07); sin acopios es el modelo de transporte
 class ModeloTransporte:
     def __init__(self, red: RedLogistica) -> None:
         self.red = red
@@ -22,6 +22,10 @@ class ModeloTransporte:
         self.variables: dict[tuple[int, int], pulp.LpVariable] = {}
         self.restricciones_oferta: list[str] = []
         self.restricciones_capacidad: list[str] = []
+        # Arcos de los centros de acopio (HU-17): empresa → acopio y acopio → planta
+        self.variables_a_acopio: dict[tuple[int, int], pulp.LpVariable] = {}
+        self.variables_desde_acopio: dict[tuple[int, int], pulp.LpVariable] = {}
+        self.restricciones_acopio: list[str] = []
         self._construir()
 
     # Variables solo en las rutas habilitadas; las demás valen cero
@@ -34,21 +38,52 @@ class ModeloTransporte:
                 nombre = f"x_{codigo_empresa}_{codigo_planta}"
                 self.variables[(i, j)] = pulp.LpVariable(nombre, lowBound=0)
 
-        self.problema += pulp.lpSum(
-            red.costos[i, j] * variable for (i, j), variable in self.variables.items()
-        )
+        self._crear_variables_de_acopios()
 
+        # Función objetivo: costo de todos los arcos (transporte + manejo + operación)
+        terminos = [red.costos[i, j] * v for (i, j), v in self.variables.items()]
+        terminos += [red.costos_a_acopio[i, t] * v for (i, t), v in self.variables_a_acopio.items()]
+        terminos += [
+            red.costos_desde_acopio[t, j] * v for (t, j), v in self.variables_desde_acopio.items()
+        ]
+        self.problema += pulp.lpSum(terminos)
+
+        # Cada empresa envía toda su oferta (a plantas o a acopios)
         for i, codigo_empresa in enumerate(red.codigos_empresas):
             nombre = f"oferta_{codigo_empresa}"
             fila = [v for (fi, _), v in self.variables.items() if fi == i]
+            fila += [v for (fi, _), v in self.variables_a_acopio.items() if fi == i]
             self.problema += pulp.lpSum(fila) == red.oferta[i], nombre
             self.restricciones_oferta.append(nombre)
 
+        # Ninguna planta recibe más de su capacidad (desde empresas o desde acopios)
         for j, codigo_planta in enumerate(red.codigos_plantas):
             nombre = f"capacidad_{codigo_planta}"
             columna = [v for (_, cj), v in self.variables.items() if cj == j]
+            columna += [v for (_, cj), v in self.variables_desde_acopio.items() if cj == j]
             self.problema += pulp.lpSum(columna) <= red.capacidad[j], nombre
             self.restricciones_capacidad.append(nombre)
+
+        # Lo que entra a un acopio sale de él, y cabe en el acopio
+        for t, codigo_acopio in enumerate(red.codigos_acopios):
+            entra = [v for (_, ct), v in self.variables_a_acopio.items() if ct == t]
+            sale = [v for (ft, _), v in self.variables_desde_acopio.items() if ft == t]
+            self.problema += pulp.lpSum(entra) == pulp.lpSum(sale), f"conservacion_{codigo_acopio}"
+            nombre = f"capacidad_{codigo_acopio}"
+            self.problema += pulp.lpSum(entra) <= red.capacidad_acopios[t], nombre
+            self.restricciones_acopio.append(nombre)
+
+    def _crear_variables_de_acopios(self) -> None:
+        red = self.red
+        for t, codigo_acopio in enumerate(red.codigos_acopios):
+            for i, codigo_empresa in enumerate(red.codigos_empresas):
+                if red.rutas_a_acopio[i, t]:
+                    nombre = f"x_{codigo_empresa}_{codigo_acopio}"
+                    self.variables_a_acopio[(i, t)] = pulp.LpVariable(nombre, lowBound=0)
+            for j, codigo_planta in enumerate(red.codigos_plantas):
+                if red.rutas_desde_acopio[t, j]:
+                    nombre = f"x_{codigo_acopio}_{codigo_planta}"
+                    self.variables_desde_acopio[(t, j)] = pulp.LpVariable(nombre, lowBound=0)
 
     def _dual(self, nombre: str) -> float:
         restriccion = self.problema.get_constraint_by_name(nombre)
@@ -73,11 +108,16 @@ class ModeloTransporte:
         duales_capacidad = np.array(
             [self._dual(nombre) for nombre in self.restricciones_capacidad]
         )
-        holguras = np.array([self.red.capacidad[j] - flujos[:, j].sum() for j in range(n)])
+        recibido = flujos.sum(axis=0)
+        acopios = self._resultado_de_acopios()
+        if acopios:
+            recibido = recibido + acopios["flujos_desde_acopio"].sum(axis=0)
+        holguras = self.red.capacidad - recibido
         holguras[np.abs(holguras) < 1e-9] = 0.0
 
         costo_total = pulp.value(self.problema.objective)
         return {
+            **acopios,
             "estado": estado,
             "costo_total": float(costo_total) if costo_total is not None else 0.0,
             "flujos": flujos,
@@ -86,4 +126,25 @@ class ModeloTransporte:
             "costos_reducidos": costos_reducidos + 0.0,
             "holguras": holguras,
             "tiempo_ms": tiempo_ms,
+        }
+
+    # Flujos por arco, duales y holguras de los acopios (vacío si la red no tiene acopios)
+    def _resultado_de_acopios(self) -> dict:
+        red = self.red
+        if not red.tiene_acopios():
+            return {}
+        a_acopio = np.zeros((red.numero_empresas(), red.numero_acopios()))
+        desde_acopio = np.zeros((red.numero_acopios(), red.numero_plantas()))
+        for (i, t), variable in self.variables_a_acopio.items():
+            a_acopio[i, t] = variable.varValue or 0.0
+        for (t, j), variable in self.variables_desde_acopio.items():
+            desde_acopio[t, j] = variable.varValue or 0.0
+        holguras = red.capacidad_acopios - a_acopio.sum(axis=0)
+        holguras[np.abs(holguras) < 1e-9] = 0.0
+        duales = np.array([self._dual(nombre) for nombre in self.restricciones_acopio])
+        return {
+            "flujos_a_acopio": a_acopio,
+            "flujos_desde_acopio": desde_acopio,
+            "duales_acopio": duales + 0.0,
+            "holguras_acopio": holguras,
         }

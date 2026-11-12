@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.db.models import Nodo, Ruta, TipoNodo
 from app.optimizacion.red import (
+    DatosAcopio,
     DatosEmpresa,
     DatosPlanta,
     DatosRuta,
@@ -52,6 +53,25 @@ class RedBuilder:
             )
         return plantas
 
+    # Centros de acopio activos (HU-17); desactivarlos equivale a "no usar acopios"
+    def leer_acopios(self) -> list[DatosAcopio]:
+        consulta = (
+            select(Nodo)
+            .where(Nodo.tipo == TipoNodo.ACOPIO, Nodo.activo.is_(True))
+            .order_by(Nodo.codigo)
+        )
+        acopios = []
+        for nodo in self.sesion.execute(consulta).scalars():
+            capacidad = 0.0 if nodo.capacidad_t is None else float(nodo.capacidad_t)
+            acopios.append(
+                DatosAcopio(
+                    codigo=nodo.codigo,
+                    capacidad=capacidad,
+                    costo_manejo=float(nodo.costo_operacion_t),
+                )
+            )
+        return acopios
+
     def leer_rutas(self) -> list[DatosRuta]:
         origen = aliased(Nodo)
         destino = aliased(Nodo)
@@ -82,7 +102,11 @@ class RedBuilder:
     def construir(self) -> RedLogistica:
         costo_km_global = parametro_repository.obtener_valor(self.sesion, "costo_km_t")
         return construir_red(
-            self.leer_empresas(), self.leer_plantas(), self.leer_rutas(), costo_km_global
+            self.leer_empresas(),
+            self.leer_plantas(),
+            self.leer_rutas(),
+            costo_km_global,
+            self.leer_acopios(),
         )
 
     def crear_validador(self) -> ValidadorRed:

@@ -1,12 +1,21 @@
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import TipoNodo
+from app.db.models import Nodo, TipoNodo
 from app.repositories import nodo_repository, ruta_repository
-from app.schemas.datos import ResumenCasoBase
+from app.schemas.datos import ResumenAcopios, ResumenCasoBase
 from app.services import caso_real_service
-from app.services.caso_base_datos import DISTANCIAS_KM, EMPRESAS, ORDEN_PLANTAS, PLANTAS
+from app.services.caso_base_datos import (
+    ACOPIOS,
+    COSTO_KM_CONSOLIDADO,
+    DISTANCIAS_KM,
+    EMPRESAS,
+    ORDEN_PLANTAS,
+    PLANTAS,
+)
+from app.services.distancias import FUENTE_ESTIMADA, distancia_vial_estimada
 
 
 # Carga de las empresas
@@ -65,3 +74,53 @@ def cargar_caso_base(sesion: Session) -> ResumenCasoBase:
     return ResumenCasoBase(
         empresas=len(EMPRESAS), plantas=len(PLANTAS), rutas=len(EMPRESAS) * len(PLANTAS)
     )
+
+
+# Distancia vial estimada entre dos nodos (Haversine x 1,3): resultado reproducible
+def distancia_entre(origen: Nodo, destino: Nodo) -> float:
+    return distancia_vial_estimada(
+        float(origen.latitud),
+        float(origen.longitud),
+        float(destino.latitud),
+        float(destino.longitud),
+    )
+
+
+# Agrega los centros de acopio a la red activa con sus rutas (HU-17)
+def cargar_acopios(sesion: Session) -> ResumenAcopios:
+    rutas = 0
+    try:
+        empresas = nodos_activos(sesion, TipoNodo.FUENTE)
+        plantas = nodos_activos(sesion, TipoNodo.PLANTA)
+        for acopio in ACOPIOS:
+            datos = {**acopio, "tipo": TipoNodo.ACOPIO, "tipo_residuo": None, "oferta_t": None}
+            nodo_repository.guardar_nodo_por_codigo(sesion, {**datos, "activo": True})
+            nodo = sesion.execute(select(Nodo).where(Nodo.codigo == acopio["codigo"])).scalar_one()
+            # Paso 1: cada empresa puede llevar su residuo al acopio (flete directo)
+            for empresa in empresas:
+                medida = {"distancia_km": distancia_entre(empresa, nodo)}
+                guardar_ruta_estimada(sesion, empresa.id, nodo.id, medida)
+                rutas += 1
+            # Paso 2: el acopio despacha a cada planta con flete consolidado
+            for planta in plantas:
+                medida = {
+                    "distancia_km": distancia_entre(nodo, planta),
+                    "costo_km_t": COSTO_KM_CONSOLIDADO,
+                }
+                guardar_ruta_estimada(sesion, nodo.id, planta.id, medida)
+                rutas += 1
+        sesion.commit()
+    except Exception:
+        sesion.rollback()
+        raise
+    return ResumenAcopios(acopios=len(ACOPIOS), rutas=rutas)
+
+
+def nodos_activos(sesion: Session, tipo: TipoNodo) -> list[Nodo]:
+    consulta = select(Nodo).where(Nodo.tipo == tipo, Nodo.activo.is_(True)).order_by(Nodo.codigo)
+    return list(sesion.execute(consulta).scalars())
+
+
+def guardar_ruta_estimada(sesion: Session, origen_id, destino_id, medida: dict) -> None:
+    datos = {**medida, "fuente_distancia": FUENTE_ESTIMADA}
+    caso_real_service.guardar_ruta_completa(sesion, origen_id, destino_id, datos)

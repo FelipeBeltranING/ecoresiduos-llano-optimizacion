@@ -1,11 +1,12 @@
 """Escenarios de sensibilidad (HU-11) y rangos de estabilidad por re-optimización (HU-12)."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.optimize import linprog
 
-from app.optimizacion.red import RedLogistica, ValidadorRed, preparar_red_para_motor
+from app.optimizacion.caminos import construir_caminos, flujo_a_planta_final
+from app.optimizacion.red import RedLogistica, ValidadorRed, copiar_red, preparar_red_para_motor
 
 TOLERANCIA_FLUJO = 1e-6
 TOLERANCIA_DUAL = 1e-4
@@ -38,41 +39,33 @@ class SolucionLP:
     duales_capacidad: np.ndarray
 
 
+# Con acopios se resuelve por caminos; los flujos se devuelven por planta final (m x n)
 def resolver_lp(red: RedLogistica) -> SolucionLP | None:
     m, n = red.numero_empresas(), red.numero_plantas()
-    indices = [(i, j) for i in range(m) for j in range(n) if red.rutas_habilitadas[i, j]]
+    caminos = construir_caminos(red)
+    total = caminos.costos.shape[1]
+    indices = [(i, k) for i in range(m) for k in range(total) if caminos.habilitadas[i, k]]
     if not indices:
         return None
-    c = np.array([red.costos[i, j] for i, j in indices])
+    c = np.array([caminos.costos[i, k] for i, k in indices])
     a_eq = np.zeros((m, len(indices)))
-    a_ub = np.zeros((n, len(indices)))
-    for k, (i, j) in enumerate(indices):
-        a_eq[i, k] = 1
-        a_ub[j, k] = 1
-    res = linprog(c, A_ub=a_ub, b_ub=red.capacidad, A_eq=a_eq, b_eq=red.oferta, method="highs")
+    a_ub = np.zeros((len(caminos.capacidad_recursos), len(indices)))
+    for columna, (i, k) in enumerate(indices):
+        a_eq[i, columna] = 1
+        a_ub[:, columna] = caminos.recursos[:, k]
+    res = linprog(
+        c, A_ub=a_ub, b_ub=caminos.capacidad_recursos, A_eq=a_eq, b_eq=red.oferta, method="highs"
+    )
     if not res.success:
         return None
-    flujos = np.zeros((m, n))
-    for k, (i, j) in enumerate(indices):
-        flujos[i, j] = res.x[k]
+    flujos_caminos = np.zeros((m, total))
+    for columna, (i, k) in enumerate(indices):
+        flujos_caminos[i, k] = res.x[columna]
     return SolucionLP(
         costo=float(res.fun),
-        flujos=flujos,
+        flujos=flujo_a_planta_final(red, flujos_caminos),
         duales_oferta=np.array(res.eqlin.marginals),
-        duales_capacidad=np.array(res.ineqlin.marginals),
-    )
-
-
-def copiar_red(red: RedLogistica) -> RedLogistica:
-    return replace(
-        red,
-        codigos_empresas=list(red.codigos_empresas),
-        codigos_plantas=list(red.codigos_plantas),
-        oferta=red.oferta.copy(),
-        capacidad=red.capacidad.copy(),
-        costos=red.costos.copy(),
-        rutas_habilitadas=red.rutas_habilitadas.copy(),
-        costo_operacion=None if red.costo_operacion is None else red.costo_operacion.copy(),
+        duales_capacidad=np.array(res.ineqlin.marginals)[:n],
     )
 
 
@@ -121,6 +114,10 @@ def aplicar_ajustes(red: RedLogistica, ajustes: list[Ajuste]) -> RedLogistica:
         elif ajuste.tipo == OFERTA:
             for i in _filas(nueva, ajuste.objetivo):
                 nueva.oferta[i] = max(0.0, nueva.oferta[i] * factor)
+        elif ajuste.tipo == CAPACIDAD and ajuste.objetivo in nueva.codigos_acopios:
+            # Cuello de botella o cierre de un centro de acopio (HU-17)
+            t = nueva.codigos_acopios.index(ajuste.objetivo)
+            nueva.capacidad_acopios[t] = max(0.0, nueva.capacidad_acopios[t] * factor)
         elif ajuste.tipo == CAPACIDAD:
             for j in _columnas(nueva, ajuste.objetivo):
                 nueva.capacidad[j] = max(0.0, nueva.capacidad[j] * factor)

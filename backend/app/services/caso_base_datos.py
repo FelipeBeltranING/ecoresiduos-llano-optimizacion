@@ -147,3 +147,29 @@ DISTANCIAS_KM = {
 }
 
 ORDEN_PLANTAS = ["P01", "P02", "P03", "P04"]
+
+# Centros de acopio del caso con nodos de paso (HU-17): Puerto López y San Martín, sobre las vías
+# hacia Puerto Gaitán y Granada (coordenadas de la cabecera municipal, DIVIPOLA)
+ACOPIOS = [
+    {
+        "codigo": "A01",
+        "nombre": "Acopio Puerto López",
+        "municipio": "Puerto López",
+        "capacidad_t": 200,
+        "costo_operacion_t": 8000,
+        "latitud": 4.085,
+        "longitud": -72.956,
+    },
+    {
+        "codigo": "A02",
+        "nombre": "Acopio San Martín",
+        "municipio": "San Martín",
+        "capacidad_t": 200,
+        "costo_operacion_t": 8000,
+        "latitud": 3.696,
+        "longitud": -73.699,
+    },
+]
+
+# Flete consolidado acopio → planta en COP/t·km (tractomula), frente a 350 del flete directo
+COSTO_KM_CONSOLIDADO = 200
