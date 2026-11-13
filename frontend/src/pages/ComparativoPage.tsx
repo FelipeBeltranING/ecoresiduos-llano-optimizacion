@@ -8,7 +8,7 @@ import {
   useIniciarAnalisis,
   useListaAnalisis,
 } from "@/api/hooks";
-import type { FilaEscalabilidad, ResultadoComparacion } from "@/api/tipos";
+import type { FilaComparacion, FilaEscalabilidad, ResultadoComparacion } from "@/api/tipos";
 import { Boton } from "@/components/ui/Boton";
 import { Campo } from "@/components/ui/Campo";
 import { ConvergenciaChart } from "@/components/ui/ConvergenciaChart";
@@ -71,13 +71,54 @@ function BarrasTiempo({ filas }: { filas: FilaEscalabilidad[] }) {
   );
 }
 
+function TablaEscenarios({ filas }: { filas: FilaComparacion[] }) {
+  return (
+    <div className="overflow-x-auto scroll-fino">
+      <table className="tabla tabla--compacta min-w-[720px]">
+        <thead>
+          <tr>
+            <th>Escenario</th>
+            <th className="text-right">Z* exacto</th>
+            <th className="text-right">Z AG</th>
+            <th className="text-right">Gap</th>
+            <th className="text-right">T. exacto</th>
+            <th className="text-right">T. AG</th>
+            <th className="text-right">Cambio de asignación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filas.map((f) => (
+            <tr key={f.escenario_id ?? "base"}>
+              <td className="font-semibold">{f.nombre}</td>
+              <td className="text-right tabular-nums">{formatCurrency(f.z_exacto)}</td>
+              <td className="text-right tabular-nums">{formatCurrency(f.z_ag)}</td>
+              <td className="text-right tabular-nums">{formatNumber(f.gap)} %</td>
+              <td className="text-right tabular-nums">{formatNumber(f.tiempo_exacto_ms)} ms</td>
+              <td className="text-right tabular-nums">{formatNumber(f.tiempo_ag_ms)} ms</td>
+              <td className="text-right tabular-nums">
+                {f.escenario_id ? `${formatNumber(f.cambio_asignacion)} %` : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function ComparativoPage() {
   const escenarios = useEscenarios();
   const iniciar = useIniciarAnalisis();
   const comparaciones = useListaAnalisis("COMPARACION");
   const escalas = useListaAnalisis("ESCALABILIDAD");
-  const [corridas, setCorridas] = useState("5");
-  const [escenarioId, setEscenarioId] = useState("");
+  const [corridas, setCorridas] = useState("10");
+  const [escenarioIds, setEscenarioIds] = useState<string[]>([]);
+
+  const alternarEscenario = (id: string) => {
+    setEscenarioIds((actual) =>
+      actual.includes(id) ? actual.filter((x) => x !== id) : [...actual, id],
+    );
+  };
 
   const idComparacion = comparaciones.data?.[0]?.id;
   const idEscala = escalas.data?.[0]?.id;
@@ -118,23 +159,30 @@ export function ComparativoPage() {
                 value={corridas}
                 onChange={(e) => setCorridas(e.target.value)}
                 inputMode="numeric"
-                ayuda="Semillas 0, 1, 2, …"
+                ayuda="10 por defecto · semillas 0, 1, 2, …"
               />
-              <label className="flex flex-col gap-1">
-                <span className="type-label text-text">Escenario</span>
-                <select
-                  className="h-10 rounded-control border border-border bg-surface px-2 text-sm"
-                  value={escenarioId}
-                  onChange={(e) => setEscenarioId(e.target.value)}
-                >
-                  <option value="">Red base</option>
-                  {(escenarios.data ?? []).map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <fieldset className="flex flex-col gap-1">
+                <legend className="type-label mb-1 text-text">Escenarios a comparar</legend>
+                <p className="mb-1 text-xs text-muted">
+                  El caso base siempre entra como primera fila.
+                </p>
+                {(escenarios.data ?? []).length === 0 ? (
+                  <p className="text-xs text-muted">
+                    Cree escenarios en Sensibilidad para compararlos aquí.
+                  </p>
+                ) : null}
+                {(escenarios.data ?? []).map((e) => (
+                  <label key={e.id} className="flex items-center gap-2 text-sm text-text">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-primary"
+                      checked={escenarioIds.includes(e.id)}
+                      onChange={() => alternarEscenario(e.id)}
+                    />
+                    {e.nombre}
+                  </label>
+                ))}
+              </fieldset>
               <Boton
                 icono={<Scale className="size-4" aria-hidden="true" />}
                 disabled={iniciar.isPending || comparacion.data?.estado === "En curso"}
@@ -142,8 +190,8 @@ export function ComparativoPage() {
                   iniciar.mutate({
                     tipo: "comparacion",
                     entrada: {
-                      corridas: Number(corridas) || 5,
-                      escenario_id: escenarioId || null,
+                      corridas: Number(corridas) || 10,
+                      escenarios: escenarioIds,
                       parametros_ag: { semilla: 0 },
                     },
                   })
@@ -224,6 +272,13 @@ export function ComparativoPage() {
                           </td>
                         </tr>
                         <tr>
+                          <td>Peor corrida</td>
+                          <td className="text-right">—</td>
+                          <td className="text-right tabular-nums">
+                            {formatCurrency(r.ag.peor)}
+                          </td>
+                        </tr>
+                        <tr>
                           <td>Desviación estándar</td>
                           <td className="text-right">—</td>
                           <td className="text-right tabular-nums">
@@ -269,6 +324,21 @@ export function ComparativoPage() {
                 ) : null}
               </div>
             </Tarjeta>
+
+            {r && r.filas?.length > 1 ? (
+              <Tarjeta relleno="none" className="overflow-hidden">
+                <div className="px-5 pt-5">
+                  <h2 className="type-title-15 text-text">Comparación por escenario</h2>
+                  <p className="text-xs text-muted">
+                    Z* y Z_AG por escenario; el cambio de asignación mide las toneladas que cambian
+                    de planta frente al caso base.
+                  </p>
+                </div>
+                <div className="p-5 pt-3">
+                  <TablaEscenarios filas={r.filas} />
+                </div>
+              </Tarjeta>
+            ) : null}
 
             {r ? (
               <Tarjeta>

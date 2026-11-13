@@ -233,6 +233,17 @@ export interface CorridaAG {
   gap: number;
 }
 
+export interface FilaComparacion {
+  escenario_id: string | null;
+  nombre: string;
+  z_exacto: number;
+  z_ag: number;
+  gap: number;
+  tiempo_exacto_ms: number;
+  tiempo_ag_ms: number;
+  cambio_asignacion: number;
+}
+
 export interface ResultadoComparacion {
   exacto: {
     ejecucion_id: string;
@@ -255,6 +266,7 @@ export interface ResultadoComparacion {
     convergencia_mejor: { generacion: number; mejor: number; promedio: number }[];
   };
   red: { empresas: number; plantas: number; usa_planta_ficticia: boolean };
+  filas: FilaComparacion[];
 }
 
 export interface FilaEscalabilidad {
