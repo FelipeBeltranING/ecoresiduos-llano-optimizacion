@@ -49,7 +49,6 @@ def a_salida(escenario: Escenario) -> EscenarioSalida:
     )
 
 
-# ---------- CRUD de escenarios (HU-11) ----------
 
 
 def crear_escenario(sesion: Session, entrada: EscenarioEntrada) -> EscenarioSalida:
@@ -86,7 +85,6 @@ def eliminar_escenario(sesion: Session, escenario_id: uuid.UUID) -> None:
     sesion.commit()
 
 
-# ---------- Ejecución del escenario con ambos métodos ----------
 
 
 def ejecutar_escenario(
@@ -168,7 +166,6 @@ def ejecutar_escenario(
     )
 
 
-# ---------- Rangos de estabilidad (HU-12) ----------
 
 
 def _redondear(valor: float | None) -> float | None:

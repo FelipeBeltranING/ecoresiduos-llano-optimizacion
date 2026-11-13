@@ -30,7 +30,6 @@ def traducir_error(error: Exception) -> HTTPException:
 ERRORES = (EscenarioNoEncontradoError, EscenarioInvalidoError, RedNoValidaError)
 
 
-# Escenarios de combustible, oferta y cuellos de botella (HU-11)
 @router.get("/escenarios", response_model=list[EscenarioSalida])
 def listar_escenarios(sesion: SesionDB) -> list[EscenarioSalida]:
     return sensibilidad_service.listar_escenarios(sesion)
@@ -62,7 +61,6 @@ def eliminar_escenario(escenario_id: uuid.UUID, sesion: SesionDB) -> None:
         raise traducir_error(error) from error
 
 
-# Ejecuta el escenario con el exacto y el AG y lo compara con la red base
 @router.post("/escenarios/{escenario_id}/ejecutar", response_model=ResultadoEscenario)
 def ejecutar_escenario(
     escenario_id: uuid.UUID, sesion: SesionDB, entrada: EjecutarEscenarioEntrada | None = None
@@ -75,7 +73,6 @@ def ejecutar_escenario(
         raise traducir_error(error) from error
 
 
-# Rangos de estabilidad de una ejecución del exacto (HU-12)
 @router.post("/sensibilidad/rangos/{ejecucion_id}", response_model=RangosSalida)
 def calcular_rangos(ejecucion_id: uuid.UUID, sesion: SesionDB) -> RangosSalida:
     try:
@@ -84,7 +81,6 @@ def calcular_rangos(ejecucion_id: uuid.UUID, sesion: SesionDB) -> RangosSalida:
         raise traducir_error(error) from error
 
 
-# Impacto de variar cada parámetro ±porcentaje (gráfica de tornado)
 @router.get("/sensibilidad/tornado", response_model=TornadoSalida)
 def calcular_tornado(
     sesion: SesionDB, porcentaje: Annotated[float, Query(gt=0, le=90)] = 20

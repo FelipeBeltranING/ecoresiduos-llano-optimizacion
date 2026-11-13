@@ -1,7 +1,3 @@
-# Entorno local del proyecto Orion.
-#   docker compose up -d          → PostgreSQL 17 (localhost:5432), API (localhost:8000) y frontend (localhost:5173)
-#   docker compose up -d db       → solo la base de datos
-#   docker compose down -v        → borra los contenedores y los datos
 
 services:
   db:

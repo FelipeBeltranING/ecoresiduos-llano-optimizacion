@@ -3,9 +3,6 @@ import pulp
 from abc import ABC, abstractmethod
 
 
-# ============================================================
-# 1. Clase base abstracta (compartida por ModeloTransporte y ModeloFlujoCostoMinimo)
-# ============================================================
 class ModeloFlujoCostoMinimo(ABC):
     """Clase base abstracta para modelos de flujo de costo mínimo."""
 
@@ -21,9 +18,6 @@ class ModeloFlujoCostoMinimo(ABC):
         pass
 
 
-# ============================================================
-# 2. Modelo de transporte: solución inicial VAM + optimización MODI
-# ============================================================
 class ModeloTransporte(ModeloFlujoCostoMinimo):
     """
     Implementa el modelo de transporte.
@@ -61,12 +55,10 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         filas, cols = list(range(m)), list(range(n))
 
         while filas and cols:
-            # Penalizaciones por fila
             pen_f = []
             for i in filas:
                 v = sorted(self.costos[i, cols])
                 pen_f.append((v[1] - v[0] if len(v) >= 2 else 0.0, i))
-            # Penalizaciones por columna
             pen_c = []
             for j in cols:
                 v = sorted(self.costos[filas, j])
@@ -105,7 +97,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         basicas = [(i, j) for i in range(m) for j in range(n)
                    if not np.isclose(self.asignacion[i, j], 0)]
 
-        # Iterar hasta determinar todos los potenciales alcanzables
         cambio = True
         while cambio:
             cambio = False
@@ -138,7 +129,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         if faltan <= 0:
             return
 
-        # Estrategia simple: agregar 0 en celdas de menor costo que no formen ciclo
         candidatas = sorted(
             [(self.costos[i, j], i, j) for i in range(m) for j in range(n)
              if np.isclose(self.asignacion[i, j], 0)],
@@ -148,7 +138,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
             if faltan <= 0:
                 break
             if np.isclose(self.asignacion[i, j], 0):
-                # Verificación básica: no agregar si crea ciclo (simplificada)
                 self.asignacion[i, j] = 0.0
                 faltan -= 1
 
@@ -160,10 +149,7 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         m, n = self.costos.shape
         basicas = [(i, j) for i in range(m) for j in range(n)
                    if not np.isclose(self.asignacion[i, j], 0)]
-        # Esta implementación simplificada no garantiza todos los casos,
-        # pero funciona para instancias pequeñas típicas.
-        # Para producción se recomienda una búsqueda DFS completa.
-        return None  # En esta versión se delega la optimalidad a PuLP
+        return None
 
     def resolver(self):
         """VAM + MODI (MODI delega la verificación de optimalidad a PuLP/CBC)."""
@@ -173,15 +159,10 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         costo_vam = float(np.sum(self.asignacion * self.costos))
         print(f"Costo VAM: {costo_vam}")
 
-        # En esta implementación, la optimalidad se garantiza con SolverExacto
-        # (PuLP + CBC), que es más robusto que una implementación manual de MODI.
         self.costo_total = costo_vam
         return self.asignacion, self.costo_total
 
 
-# ============================================================
-# 3. SolverExacto: PuLP + CBC (verificación / solución óptima)
-# ============================================================
 class SolverExacto:
     """Resuelve el modelo de transporte usando PuLP + CBC."""
 
@@ -195,18 +176,14 @@ class SolverExacto:
         prob = pulp.LpProblem("Transporte", pulp.LpMinimize)
         x = pulp.LpVariable.dicts("x", (range(m), range(n)), lowBound=0, cat="Continuous")
 
-        # Función objetivo
         prob += pulp.lpSum(costos[i][j] * x[i][j] for i in range(m) for j in range(n))
 
-        # Restricciones de oferta
         for i in range(m):
             prob += pulp.lpSum(x[i][j] for j in range(n)) == oferta[i]
 
-        # Restricciones de demanda
         for j in range(n):
             prob += pulp.lpSum(x[i][j] for i in range(m)) == demanda[j]
 
-        # Resolver con CBC
         prob.solve(pulp.PULP_CBC_CMD(msg=0))
 
         asignacion = np.zeros((m, n))
@@ -218,9 +195,6 @@ class SolverExacto:
         return asignacion, costo
 
 
-# ============================================================
-# 4. ModeloFactory: creación unificada
-# ============================================================
 class ModeloFactory:
     """Fábrica para crear instancias de modelos de transporte."""
 
@@ -228,13 +202,9 @@ class ModeloFactory:
     def crear_modelo(tipo, costos, oferta, demanda):
         if tipo == "transporte":
             return ModeloTransporte(costos, oferta, demanda)
-        # Aquí podrían añadirse otros tipos (flujo, transbordo, etc.)
         raise ValueError(f"Tipo de modelo no soportado: {tipo}")
 
 
-# ============================================================
-# 5. Ejemplo de uso (mismo problema que antes)
-# ============================================================
 if __name__ == "__main__":
     costos = [
         [19, 30, 50, 10],
@@ -244,13 +214,10 @@ if __name__ == "__main__":
     oferta  = [7, 9, 18]
     demanda = [5, 8, 7, 14]
 
-    # Crear modelo mediante la fábrica
     modelo = ModeloFactory.crear_modelo("transporte", costos, oferta, demanda)
 
-    # 1) Solución inicial VAM
     asign_vam, costo_vam = modelo.resolver()
 
-    # 2) Solución óptima con PuLP + CBC
     asign_opt, costo_opt = SolverExacto.resolver(modelo)
 
     print("\n=== Solución óptima (PuLP + CBC) ===")

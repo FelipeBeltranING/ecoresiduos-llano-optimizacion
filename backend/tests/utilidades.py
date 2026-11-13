@@ -19,12 +19,10 @@ from app.services.distancias import distancia_vial_estimada
 COSTO_KM_CASO_BASE = 350
 PENALIZACION_FICTICIA = 1_000_000
 Z_OPTIMO_CASO_BASE = 64_691_000
-# Caso base + acopios de Puerto López y San Martín (HU-17)
 Z_OPTIMO_CON_ACOPIOS = 61_761_025
 TONELADAS_POR_ACOPIO = [160, 85]
 
 
-# Red del caso base armada sin base de datos
 def construir_red_caso_base(
     factor_oferta: float = 1.0, con_acopios: bool = False, capacidad_acopio: float | None = None
 ) -> RedLogistica:
@@ -67,7 +65,6 @@ def construir_red_caso_base(
     return construir_red(empresas, plantas, rutas, COSTO_KM_CASO_BASE, acopios)
 
 
-# Rutas empresa → acopio (flete directo) y acopio → planta (flete consolidado)
 def rutas_del_acopio(acopio: dict) -> list[DatosRuta]:
     rutas = []
     for empresa in EMPRESAS:

@@ -9,18 +9,15 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Rutas y constantes
 RAIZ = Path(__file__).resolve().parent.parent
 BACKLOG = RAIZ / "docs" / "backlog" / "backlog.json"
 TITULO_TABLERO = "Orion · EcoResiduos del Llano"
 
-# Fin de cada sprint en UTC
 FIN_SPRINT_UTC = {
     "Sprint 1": "2026-11-04T04:59:59Z",
     "Sprint 2": "2026-11-13T04:59:59Z",
 }
 
-# Etiquetas del repositorio
 ETIQUETAS: list[tuple[str, str, str]] = [
     ("tipo: historia", "1F7A4D", "Historia de usuario del Product Backlog"),
     ("tipo: tarea", "5B6B62", "Ítem técnico (configuración, CI/CD, despliegue, informe)"),
@@ -54,7 +51,6 @@ AREA_A_ETIQUETA = {
     "docs": "área: docs",
 }
 
-# Definition of Ready
 DOR = [
     "Asociada a una épica y en formato Como / Quiero / Para",
     "Criterios de aceptación verificables y con datos concretos",
@@ -68,7 +64,6 @@ DOR = [
 ]
 
 
-# Cliente de la GitHub CLI
 class GH:
     def __init__(self, dry_run: bool) -> None:
         self.dry_run = dry_run
@@ -100,7 +95,6 @@ def _citar(arg: str) -> str:
     return f'"{arg}"' if (" " in arg or not arg) else arg
 
 
-# Contenido de las issues
 
 
 def _nombre(equipo: dict, ini: str) -> str:
@@ -187,7 +181,6 @@ def asignados(item: dict, equipo: dict) -> list[str]:
     return usuarios
 
 
-# Pasos de configuración
 
 
 def detectar_repo(gh: GH, repo: str | None) -> str:
@@ -402,7 +395,6 @@ def crear_tablero(gh: GH, repo: str, datos: dict, issues: list[dict]) -> None:
         print(f"  ✓ {item['id']} en el tablero")
 
 
-# Programa principal
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Configura el repositorio de GitHub desde docs/backlog/backlog.json"

@@ -17,7 +17,6 @@ from app.schemas.gestion import (
 from app.services.distancias import FUENTE_MANUAL, medir_ruta
 
 
-# Errores de negocio que la API traduce a 404 y 409
 class NoEncontradoError(Exception):
     pass
 
@@ -26,7 +25,6 @@ class ConflictoError(Exception):
     pass
 
 
-# ---------- Nodos (HU-01, HU-02, HU-17) ----------
 
 
 def a_salida(nodo: Nodo) -> NodoSalida:
@@ -64,7 +62,6 @@ def buscar_nodo(sesion: Session, codigo: str) -> Nodo:
     return nodo
 
 
-# Destinos de un nodo según su tipo: las fuentes envían a plantas y acopios
 def tipos_destino(tipo: TipoNodo) -> list[TipoNodo]:
     if tipo == TipoNodo.FUENTE:
         return [TipoNodo.PLANTA, TipoNodo.ACOPIO]
@@ -91,7 +88,6 @@ def crear_ruta_estimada(sesion: Session, origen: Nodo, destino: Nodo) -> None:
     sesion.add(Ruta(origen_id=origen.id, destino_id=destino.id, **medida))
 
 
-# Rutas que faltan para el nodo nuevo, con distancia vial estimada
 def generar_rutas_de_nodo(sesion: Session, nodo: Nodo) -> int:
     existentes = {(o, d) for o, d in sesion.execute(select(Ruta.origen_id, Ruta.destino_id)).all()}
     creadas = 0
@@ -146,12 +142,10 @@ def actualizar_nodo(sesion: Session, codigo: str, cambios: NodoActualizacion) ->
     return a_salida(nodo)
 
 
-# Desactivar conserva el historial: el nodo sale de la red pero no se borra
 def desactivar_nodo(sesion: Session, codigo: str) -> NodoSalida:
     return actualizar_nodo(sesion, codigo, NodoActualizacion(activo=False))
 
 
-# ---------- Rutas y matriz de costos (HU-03) ----------
 
 
 def obtener_matriz(sesion: Session) -> MatrizRutas:
@@ -246,7 +240,6 @@ def generar_rutas_faltantes(sesion: Session) -> ResumenLote:
     return ResumenLote(actualizadas=0, creadas=creadas)
 
 
-# ---------- Parámetros globales (HU-04) ----------
 
 
 def listar_parametros(sesion: Session) -> list[ParametroSalida]:

@@ -13,7 +13,6 @@ from app.services import analisis_service, ejecucion_service
 router = APIRouter(prefix="/ejecuciones", tags=["ejecuciones"])
 
 
-# Historial de ejecuciones con filtros y paginación (HU-15)
 @router.get("", response_model=PaginaEjecuciones)
 def listar_ejecuciones(
     sesion: SesionDB,
@@ -30,7 +29,6 @@ def listar_ejecuciones(
     )
 
 
-# Detalle de una ejecución
 @router.get("/{ejecucion_id}", response_model=EjecucionDetalle)
 def obtener_ejecucion(ejecucion_id: uuid.UUID, sesion: SesionDB) -> EjecucionDetalle:
     detalle = ejecucion_service.obtener_detalle(sesion, ejecucion_id)

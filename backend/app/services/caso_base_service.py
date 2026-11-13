@@ -18,7 +18,6 @@ from app.services.caso_base_datos import (
 from app.services.distancias import FUENTE_ESTIMADA, distancia_vial_estimada
 
 
-# Carga de las empresas
 def cargar_empresas(sesion: Session) -> dict[str, uuid.UUID]:
     ids_empresas = {}
     for empresa in EMPRESAS:
@@ -31,7 +30,6 @@ def cargar_empresas(sesion: Session) -> dict[str, uuid.UUID]:
     return ids_empresas
 
 
-# Carga de las plantas
 def cargar_plantas(sesion: Session) -> dict[str, uuid.UUID]:
     ids_plantas = {}
     for planta in PLANTAS:
@@ -44,7 +42,6 @@ def cargar_plantas(sesion: Session) -> dict[str, uuid.UUID]:
     return ids_plantas
 
 
-# Carga de las rutas empresa → planta
 def cargar_rutas(
     sesion: Session, ids_empresas: dict[str, uuid.UUID], ids_plantas: dict[str, uuid.UUID]
 ) -> None:
@@ -56,7 +53,6 @@ def cargar_rutas(
             ruta_repository.guardar_ruta(sesion, origen_id, destino_id, distancia)
 
 
-# Carga completa en una sola transacción
 def cargar_caso_base(sesion: Session) -> ResumenCasoBase:
     try:
         ids_empresas = cargar_empresas(sesion)
@@ -76,7 +72,6 @@ def cargar_caso_base(sesion: Session) -> ResumenCasoBase:
     )
 
 
-# Distancia vial estimada entre dos nodos (Haversine x 1,3): resultado reproducible
 def distancia_entre(origen: Nodo, destino: Nodo) -> float:
     return distancia_vial_estimada(
         float(origen.latitud),
@@ -86,7 +81,6 @@ def distancia_entre(origen: Nodo, destino: Nodo) -> float:
     )
 
 
-# Agrega los centros de acopio a la red activa con sus rutas (HU-17)
 def cargar_acopios(sesion: Session) -> ResumenAcopios:
     rutas = 0
     try:
@@ -96,12 +90,10 @@ def cargar_acopios(sesion: Session) -> ResumenAcopios:
             datos = {**acopio, "tipo": TipoNodo.ACOPIO, "tipo_residuo": None, "oferta_t": None}
             nodo_repository.guardar_nodo_por_codigo(sesion, {**datos, "activo": True})
             nodo = sesion.execute(select(Nodo).where(Nodo.codigo == acopio["codigo"])).scalar_one()
-            # Paso 1: cada empresa puede llevar su residuo al acopio (flete directo)
             for empresa in empresas:
                 medida = {"distancia_km": distancia_entre(empresa, nodo)}
                 guardar_ruta_estimada(sesion, empresa.id, nodo.id, medida)
                 rutas += 1
-            # Paso 2: el acopio despacha a cada planta con flete consolidado
             for planta in plantas:
                 medida = {
                     "distancia_km": distancia_entre(nodo, planta),

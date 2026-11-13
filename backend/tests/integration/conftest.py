@@ -15,14 +15,12 @@ from app.main import app
 CARPETA_BACKEND = Path(__file__).resolve().parents[2]
 
 
-# Todas las pruebas de esta carpeta son de integración
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
         if "integration" in str(item.path):
             item.add_marker(pytest.mark.integracion)
 
 
-# URL de la base de pruebas: se salta si no existe y nunca se usa Supabase
 def obtener_url_pruebas() -> str:
     url = settings.test_database_url
     if not url:
@@ -32,7 +30,6 @@ def obtener_url_pruebas() -> str:
     return url
 
 
-# Migraciones aplicadas una vez por sesión de pruebas
 @pytest.fixture(scope="session")
 def motor_pruebas() -> Iterator[Engine]:
     url = obtener_url_pruebas()
@@ -46,7 +43,6 @@ def motor_pruebas() -> Iterator[Engine]:
     motor.dispose()
 
 
-# Sesión para cada prueba
 @pytest.fixture
 def sesion_pruebas(motor_pruebas: Engine) -> Iterator[Session]:
     fabrica = sessionmaker(bind=motor_pruebas, autoflush=False, expire_on_commit=False)
@@ -58,7 +54,6 @@ def sesion_pruebas(motor_pruebas: Engine) -> Iterator[Session]:
         sesion.close()
 
 
-# Cliente de la API que usa la base de pruebas
 @pytest.fixture
 def cliente_pruebas(motor_pruebas: Engine) -> Iterator[TestClient]:
     fabrica = sessionmaker(bind=motor_pruebas, autoflush=False, expire_on_commit=False)

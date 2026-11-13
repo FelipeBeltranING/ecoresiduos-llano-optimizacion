@@ -14,7 +14,6 @@ from app.services.distancias import FUENTE_ESTIMADA, FUENTE_OSRM
 CARPETA_DATOS = Path(__file__).resolve().parent / "datos"
 
 
-# Caso real del Meta generado por scripts/generar_caso_real.py (HU-19)
 @lru_cache
 def leer_caso_real() -> dict:
     return json.loads((CARPETA_DATOS / "caso_real_meta.json").read_text(encoding="utf-8"))
@@ -29,7 +28,6 @@ def leer_geometrias_caso_base() -> dict[tuple[str, str], dict]:
     return {(f["origen"], f["destino"]): f for f in filas}
 
 
-# Solo queda activa la red del caso cargado
 def activar_solo(sesion: Session, codigos: set[str]) -> None:
     sesion.execute(update(Nodo).where(Nodo.codigo.not_in(codigos)).values(activo=False))
 
@@ -85,7 +83,6 @@ def cargar_caso_real(sesion: Session) -> ResumenCasoBase:
     )
 
 
-# Agrega el trazado vial al caso base sin cambiar sus distancias estimadas
 def completar_geometrias_caso_base(sesion: Session, ids: dict) -> None:
     geometrias = leer_geometrias_caso_base()
     for (origen, destino), fila in geometrias.items():

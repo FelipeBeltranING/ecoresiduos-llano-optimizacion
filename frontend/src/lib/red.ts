@@ -64,7 +64,7 @@ export function ejecucionVigente(flujos: Flujo[], nodos: Nodo[]): boolean {
       .filter((n) => n.activo && n.tipo === "FUENTE" && (n.oferta_t ?? 0) > 0)
       .map((n) => n.codigo),
   );
-  // Los acopios también envían flujo (acopio → planta), pero no son empresas
+  
   const acopios = new Set(nodos.filter((n) => n.tipo === "ACOPIO").map((n) => n.codigo));
   const origenes = new Set(flujos.map((f) => f.origen).filter((codigo) => !acopios.has(codigo)));
   if (empresas.size !== origenes.size) return false;

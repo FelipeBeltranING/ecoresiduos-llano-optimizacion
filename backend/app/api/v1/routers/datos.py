@@ -13,25 +13,21 @@ router = APIRouter(prefix="/datos", tags=["datos"])
 TIPO_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
-# Carga del caso base del Meta (10 empresas, 4 plantas y 40 rutas)
 @router.post("/caso-base", response_model=ResumenCasoBase)
 def cargar_caso_base(sesion: SesionDB) -> ResumenCasoBase:
     return caso_base_service.cargar_caso_base(sesion)
 
 
-# Centros de acopio de Puerto López y San Martín sobre la red activa (HU-17)
 @router.post("/acopios", response_model=ResumenAcopios)
 def cargar_acopios(sesion: SesionDB) -> ResumenAcopios:
     return caso_base_service.cargar_acopios(sesion)
 
 
-# Carga del caso real del Meta: EVA 2018, ICA/FNG 2025, DIVIPOLA y rutas OSRM (HU-19)
 @router.post("/caso-real", response_model=ResumenCasoBase)
 def cargar_caso_real(sesion: SesionDB) -> ResumenCasoBase:
     return caso_real_service.cargar_caso_real(sesion)
 
 
-# Fuentes y coeficientes del caso real, para mostrarlos en la interfaz y el informe
 @router.get("/caso-real/fuentes")
 def fuentes_caso_real() -> dict:
     caso = caso_real_service.leer_caso_real()
@@ -45,7 +41,6 @@ def fuentes_caso_real() -> dict:
     }
 
 
-# Exportación de la red a Excel (HU-05)
 @router.get("/exportar")
 def exportar(sesion: SesionDB) -> Response:
     contenido = importacion_service.exportar_red(sesion)
@@ -56,7 +51,6 @@ def exportar(sesion: SesionDB) -> Response:
     )
 
 
-# Importación desde Excel con validación por fila (HU-05)
 @router.post("/importar", response_model=ResumenImportacion)
 async def importar(sesion: SesionDB, archivo: Annotated[UploadFile, File()]) -> ResumenImportacion:
     contenido = await archivo.read()

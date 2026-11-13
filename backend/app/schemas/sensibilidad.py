@@ -9,7 +9,6 @@ from app.schemas.optimizacion import ParametrosAGEntrada
 TipoAjuste = Literal["COSTO_TRANSPORTE", "OFERTA", "CAPACIDAD", "COSTO_RUTA", "CERRAR_RUTA"]
 
 
-# Un ajuste del escenario: combustible, oferta, cuello de botella o ruta (HU-11)
 class AjusteEntrada(BaseModel):
     tipo: TipoAjuste
     porcentaje: float = Field(default=0, ge=-100, le=500)
@@ -39,7 +38,6 @@ class CambioFlujo(BaseModel):
     toneladas_escenario: float
 
 
-# Comparación del escenario contra la red base, con ambos métodos
 class ResultadoEscenario(BaseModel):
     escenario_id: uuid.UUID
     nombre: str
@@ -57,7 +55,6 @@ class ResultadoEscenario(BaseModel):
     cambios_flujo: list[CambioFlujo]
 
 
-# Rango de estabilidad de un parámetro (HU-12)
 class RangoSalida(BaseModel):
     tipo: Literal["COSTO_RUTA", "CAPACIDAD", "OFERTA"]
     elemento: str

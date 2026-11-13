@@ -6,7 +6,6 @@ cliente = TestClient(app)
 URL_GENETICO = "/api/v1/optimizacion/genetico"
 
 
-# La API rechaza parámetros del AG inválidos antes de tocar la base de datos
 def test_prob_cruce_fuera_de_rango_da_422() -> None:
     respuesta = cliente.post(URL_GENETICO, json={"prob_cruce": 1.5})
 

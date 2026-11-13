@@ -25,7 +25,6 @@ def archivo(contenido: bytes, formato: str, nombre: str) -> Response:
     )
 
 
-# Exportación de una ejecución en PDF o Excel (HU-16)
 @router.get("/ejecuciones/{ejecucion_id}.{formato}")
 def reporte_ejecucion(
     ejecucion_id: uuid.UUID, formato: Literal["pdf", "xlsx"], sesion: SesionDB
@@ -40,7 +39,6 @@ def reporte_ejecucion(
     return archivo(contenido, formato, f"ejecucion_{str(ejecucion_id)[:8]}")
 
 
-# Exportación de un análisis comparativo o de escalabilidad (HU-16)
 @router.get("/analisis/{analisis_id}.{formato}")
 def reporte_analisis(
     analisis_id: uuid.UUID, formato: Literal["pdf", "xlsx"], sesion: SesionDB

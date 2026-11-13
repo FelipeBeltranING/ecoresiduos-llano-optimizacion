@@ -7,7 +7,6 @@ from app.optimizacion.red import RedLogistica
 ESTADO_OPTIMO = "Óptimo"
 
 
-# Resultado del modelo exacto (HU-07)
 @dataclass
 class ResultadoExacto:
     estado: str
@@ -18,14 +17,12 @@ class ResultadoExacto:
     costos_reducidos: np.ndarray
     holguras: np.ndarray
     tiempo_ms: float
-    # Solo con centros de acopio (HU-17): flujos por arco, duales y holguras de los acopios
     flujos_a_acopio: np.ndarray | None = None
     flujos_desde_acopio: np.ndarray | None = None
     duales_acopio: np.ndarray | None = None
     holguras_acopio: np.ndarray | None = None
 
 
-# Parámetros del Algoritmo Genético (HU-09)
 @dataclass
 class ParametrosAG:
     tamano_poblacion: int = 100
@@ -39,7 +36,6 @@ class ParametrosAG:
     tipo_cruce: str = "un_punto"
 
 
-# Mejor costo y costo promedio de una generación
 @dataclass
 class RegistroConvergencia:
     generacion: int
@@ -47,7 +43,6 @@ class RegistroConvergencia:
     costo_promedio: float
 
 
-# Resultado del Algoritmo Genético (HU-09)
 @dataclass
 class ResultadoGenetico:
     costo_total: float
@@ -59,14 +54,12 @@ class ResultadoGenetico:
     flujos_desde_acopio: np.ndarray | None = None
 
 
-# Punto de conexión del modelo exacto: aquí se llama a la implementación del equipo
 def resolver_exacto(red: RedLogistica) -> ResultadoExacto:
     from app.optimizacion.exacto.modelo_transporte import ModeloTransporte
 
     return ResultadoExacto(**ModeloTransporte(red).resolver())
 
 
-# Punto de conexión del Algoritmo Genético: aquí se llama a la implementación del equipo
 def ejecutar_genetico(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGenetico:
     from app.optimizacion.genetico.adaptador import ejecutar
 

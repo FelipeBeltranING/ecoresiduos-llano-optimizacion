@@ -16,9 +16,9 @@ from app.optimizacion.red import CODIGO_PLANTA_FICTICIA, RedLogistica, copiar_re
 from app.optimizacion.sensibilidad.analizador import balancear, resolver_lp
 
 PESOS_DEL_ARTICULO = (0.5, 0.3, 0.2)
-UMBRAL_HOLGURA = 0.10  # mecanismo 1: al menos 10 % de capacidad libre
-UMBRAL_RANGO = 0.10  # mecanismo 3: la capacidad puede bajar 10 % sin cambiar los duales
-UMBRAL_ALTERNATIVA = 0.10  # mecanismo 4: segunda ruta a no más de 10 % de costo
+UMBRAL_HOLGURA = 0.10
+UMBRAL_RANGO = 0.10
+UMBRAL_ALTERNATIVA = 0.10
 TOLERANCIA = 1e-6
 MECANISMOS = (
     "Holgura de capacidad",
@@ -32,13 +32,13 @@ MECANISMOS = (
 @dataclass
 class CriticidadNodo:
     codigo: str
-    tipo: str  # PLANTA o ACOPIO
-    intermediacion: float  # C_B
-    grado_entrada: float  # C_D⁻
-    resiliencia: float  # R
+    tipo: str
+    intermediacion: float
+    grado_entrada: float
+    resiliencia: float
     mecanismos: list[bool]
     ice: float = 0.0
-    delta_costo_pct: float = 0.0  # impacto observado al cerrar el nodo
+    delta_costo_pct: float = 0.0
     toneladas_sin_planta: float = 0.0
 
 
@@ -53,16 +53,15 @@ class AnalisisCriticidad:
     notas: list[str] = field(default_factory=list)
 
 
-# ---------- Datos de la solución base que usan los tres términos ----------
 
 
 @dataclass
 class _Base:
-    red: RedLogistica  # balanceada (con ficticia si hace falta)
+    red: RedLogistica
     caminos: object
     flujos_caminos: np.ndarray
-    duales: np.ndarray  # duales de capacidad por recurso (plantas y luego acopios)
-    uso: np.ndarray  # toneladas por recurso
+    duales: np.ndarray
+    uso: np.ndarray
     costo: float
 
 
@@ -95,7 +94,6 @@ def _recursos_reales(red: RedLogistica) -> list[tuple[int, str, str]]:
     return lista
 
 
-# ---------- C_B: intermediación ----------
 
 
 def _intermediacion(base: _Base, recurso: int, tipo: str) -> float:
@@ -103,7 +101,6 @@ def _intermediacion(base: _Base, recurso: int, tipo: str) -> float:
     if total <= 0:
         return 0.0
     if tipo == "PLANTA":
-        # En un grafo bipartito la intermediación clásica es 0: se usa el flujo intermediado
         return float(base.uso[recurso] / total)
     return _intermediacion_de_acopio(base, recurso)
 
@@ -127,7 +124,6 @@ def _intermediacion_de_acopio(base: _Base, recurso: int) -> float:
     return float(pasan / pares) if pares else 0.0
 
 
-# ---------- C_D⁻: grado de entrada ----------
 
 
 def _empresas_que_dependen(base: _Base, recurso: int) -> np.ndarray:
@@ -135,7 +131,6 @@ def _empresas_que_dependen(base: _Base, recurso: int) -> np.ndarray:
     return np.flatnonzero((base.flujos_caminos[:, usa] > TOLERANCIA).any(axis=1))
 
 
-# ---------- R: resiliencia logística (5 mecanismos) ----------
 
 
 def _capacidad(red: RedLogistica, recurso: int) -> float:
@@ -157,19 +152,15 @@ def _mecanismos(base: _Base, recurso: int) -> list[bool]:
     red, caminos = base.red, base.caminos
     capacidad = _capacidad(red, recurso)
 
-    # 1. Holgura de capacidad (redundancia)
     holgura = capacidad > 0 and (capacidad - base.uso[recurso]) / capacidad >= UMBRAL_HOLGURA
 
-    # 2. Precio sombra 0: no es cuello de botella
     sin_precio_sombra = abs(base.duales[recurso]) < 1e-4
 
-    # 3. Rango amplio: bajar 10 % la capacidad no cambia los precios sombra
     reducida = resolver_lp(_con_capacidad(red, recurso, capacidad * (1 - UMBRAL_RANGO)))
     rango_amplio = reducida is not None and np.allclose(
         reducida.duales_recursos, base.duales, atol=1e-4
     )
 
-    # 4. Rutas alternativas (análogo de los reintentos)
     dependientes = _empresas_que_dependen(base, recurso)
     con_alternativa = 0
     costos = np.where(caminos.habilitadas, caminos.costos, np.inf)
@@ -182,7 +173,6 @@ def _mecanismos(base: _Base, recurso: int) -> list[bool]:
             con_alternativa += 1
     alternativas = len(dependientes) > 0 and con_alternativa >= len(dependientes) / 2
 
-    # 5. Respaldo por acopio (análogo del circuit breaker): otro acopio con cupo
     n = red.numero_plantas()
     respaldo = False
     for t in range(red.numero_acopios()):
@@ -193,7 +183,6 @@ def _mecanismos(base: _Base, recurso: int) -> list[bool]:
     return [bool(holgura), bool(sin_precio_sombra), bool(rango_amplio), alternativas, respaldo]
 
 
-# ---------- Fallo simulado: cerrar el nodo y re-optimizar ----------
 
 
 def simular_falla(red: RedLogistica, codigo: str, penalizacion: float) -> tuple[float, float]:
@@ -210,7 +199,6 @@ def simular_falla(red: RedLogistica, codigo: str, penalizacion: float) -> tuple[
     return solucion.costo, sin_planta
 
 
-# ---------- ICE, ranking y calibración ----------
 
 
 def _ice(nodo: CriticidadNodo, pesos: tuple[float, float, float]) -> float:
@@ -252,7 +240,6 @@ def calcular_ice(
         raise ValueError("Los pesos α, β y γ deben ser no negativos y sumar 1")
     base = _resolver_base(red, penalizacion)
 
-    # Paso 1: los tres términos de cada planta y acopio
     nodos = []
     for recurso, codigo, tipo in _recursos_reales(base.red):
         mecanismos = _mecanismos(base, recurso)
@@ -265,13 +252,11 @@ def calcular_ice(
             mecanismos=mecanismos,
         )
         nodo.ice = _ice(nodo, pesos)
-        # Paso 2: impacto observado al cerrar el nodo
         costo, sin_planta = simular_falla(red, codigo, penalizacion)
         nodo.delta_costo_pct = (costo - base.costo) / base.costo * 100
         nodo.toneladas_sin_planta = sin_planta
         nodos.append(nodo)
 
-    # Paso 3: ranking, correlación con el impacto y pesos que mejor lo explican
     nodos.sort(key=lambda nodo: nodo.ice, reverse=True)
     pesos_calibrados, rho_calibrado = calibrar(nodos)
     analisis = AnalisisCriticidad(

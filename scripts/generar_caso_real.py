@@ -30,19 +30,13 @@ AGENTE = "ecoresiduos-llano-optimizacion/1.0 (proyecto academico)"
 SOCRATA = "https://www.datos.gov.co/resource"
 OSRM = "https://router.project-osrm.org"
 
-# Coeficientes técnicos de generación de residuo (documentados en el informe)
-# Palma: tasa de extracción de aceite ~21 % del racimo (RFF); tusa/raquis ~22 % del RFF
 TASA_EXTRACCION_ACEITE = 0.21
 TUSA_POR_RFF = 0.22
-# Arroz: la cascarilla es ~20 % del paddy
 CASCARILLA_POR_PADDY = 0.20
-# Bovinos: ~10 kg de estiércol fresco por animal y día
 ESTIERCOL_KG_DIA = 10.0
 
-# Fracción de cada residuo que la empresa capta mediante alianzas (supuesto de negocio)
 CAPTACION = {"PALMA": 0.065, "ARROZ": 0.25, "BOVINO": 0.005}
 
-# Fuentes del caso real: (código, tipo, municipio DIVIPOLA, nombre, tipo de residuo)
 FUENTES = [
     ("R01", "PALMA", "PUERTO GAITÁN", "Núcleo palmero de Puerto Gaitán", "Palma (tusa/raquis)"),
     ("R02", "PALMA", "SAN CARLOS DE GUAROA", "Núcleo palmero de San Carlos de Guaroa",
@@ -60,7 +54,6 @@ FUENTES = [
     ("R12", "BOVINO", "VILLAVICENCIO", "Ganaderías de Villavicencio", "Ganadería (estiércol)"),
 ]
 
-# Plantas de EcoResiduos (mismas sedes del enunciado, coordenadas oficiales)
 PLANTAS = [
     ("RP1", "VILLAVICENCIO", "Planta Villavicencio", 300, 45000),
     ("RP2", "RESTREPO", "Planta Restrepo", 180, 52000),
@@ -73,7 +66,6 @@ def nombre_bonito(municipio: str) -> str:
     return municipio.title().replace(" De ", " de ")
 
 
-# Trayecto mínimo dentro del mismo municipio (la fuente y la planta no comparten punto)
 DISTANCIA_MINIMA_KM = 5.0
 
 

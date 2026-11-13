@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Tabla flujo_resultado: toneladas enviadas por ruta en una ejecución (destino nulo = ficticia)
 class FlujoResultado(Base):
     __tablename__ = "flujo_resultado"
     __table_args__ = (CheckConstraint("toneladas >= 0", name="ck_flujo_toneladas_no_negativas"),)

@@ -9,7 +9,6 @@ from app.services.ejecucion_service import RedNoValidaError
 router = APIRouter(prefix="/optimizacion", tags=["optimizacion"])
 
 
-# Respuesta común de una ejecución creada
 def resumir(ejecucion: Ejecucion) -> EjecucionCreada:
     return EjecucionCreada(
         id=ejecucion.id,
@@ -20,7 +19,6 @@ def resumir(ejecucion: Ejecucion) -> EjecucionCreada:
     )
 
 
-# Modelo exacto (HU-07)
 @router.post("/exacto", response_model=EjecucionCreada, status_code=status.HTTP_201_CREATED)
 def ejecutar_exacto(sesion: SesionDB) -> EjecucionCreada:
     try:
@@ -32,7 +30,6 @@ def ejecutar_exacto(sesion: SesionDB) -> EjecucionCreada:
     return resumir(ejecucion)
 
 
-# Algoritmo Genético (HU-09)
 @router.post("/genetico", response_model=EjecucionCreada, status_code=status.HTTP_201_CREATED)
 def ejecutar_genetico(sesion: SesionDB, parametros: ParametrosAGEntrada) -> EjecucionCreada:
     try:

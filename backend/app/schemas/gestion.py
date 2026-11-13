@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, model_validator
 from app.db.models import TipoNodo
 
 
-# Datos comunes de un nodo (empresa, planta o centro de acopio)
 class NodoBase(BaseModel):
     nombre: str = Field(min_length=2, max_length=120)
     municipio: str = Field(min_length=2, max_length=80)
@@ -17,7 +16,6 @@ class NodoBase(BaseModel):
     longitud: float = Field(ge=-82, le=-66)
 
 
-# Alta de un nodo (HU-01, HU-02, HU-17)
 class NodoEntrada(NodoBase):
     codigo: str = Field(min_length=2, max_length=10, pattern=r"^[A-Z0-9_-]+$")
     tipo: TipoNodo
@@ -31,7 +29,6 @@ class NodoEntrada(NodoBase):
         return self
 
 
-# Edición parcial de un nodo
 class NodoActualizacion(BaseModel):
     nombre: str | None = Field(default=None, min_length=2, max_length=120)
     municipio: str | None = Field(default=None, min_length=2, max_length=80)
@@ -51,7 +48,6 @@ class NodoSalida(NodoBase):
     activo: bool
 
 
-# Celda de la matriz de rutas (HU-03)
 class RutaSalida(BaseModel):
     origen: str
     destino: str
@@ -61,7 +57,6 @@ class RutaSalida(BaseModel):
     costo_unitario: float | None
     duracion_min: float | None = None
     fuente_distancia: str | None = None
-    # Polilínea codificada (formato de Google, precisión 5) del trazado vial
     geometria: str | None = None
 
 
@@ -71,7 +66,6 @@ class MatrizRutas(BaseModel):
     rutas: list[RutaSalida]
 
 
-# Cambio de una ruta dentro de una actualización por lote
 class RutaCambio(BaseModel):
     origen: str
     destino: str
@@ -86,7 +80,6 @@ class ResumenLote(BaseModel):
     creadas: int
 
 
-# Parámetros globales del negocio (HU-04)
 class ParametroSalida(BaseModel):
     clave: str
     valor: float
@@ -98,7 +91,6 @@ class ParametroCambio(BaseModel):
     valor: float = Field(ge=0)
 
 
-# Resultado de importar un archivo Excel (HU-05)
 class ErrorImportacion(BaseModel):
     hoja: str
     fila: int

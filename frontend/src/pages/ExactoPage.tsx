@@ -41,7 +41,7 @@ export function ExactoPage() {
   const plantas = nodosActivos.filter((n) => n.tipo === "PLANTA");
   const flujos = detalle?.flujos ?? [];
   const uso = { ...usoDePlantas(nodosActivos, flujos), ...usoDeAcopios(nodosActivos, flujos) };
-  // Columnas: plantas, centros de acopio con flujo (empresa → acopio) y planta ficticia
+  
   const acopios = nodosActivos
     .filter((n) => n.tipo === "ACOPIO" && flujos.some((f) => f.destino === n.codigo))
     .map((n) => n.codigo);

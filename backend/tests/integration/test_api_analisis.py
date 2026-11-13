@@ -15,7 +15,6 @@ def cliente(cliente_pruebas: TestClient) -> TestClient:
     return cliente_pruebas
 
 
-# En TestClient la tarea en segundo plano termina antes de devolver la respuesta
 def test_comparacion_exacto_vs_ag(cliente: TestClient) -> None:
     creado = cliente.post(
         "/api/v1/analisis/comparacion", json={"corridas": 3, "parametros_ag": AG_RAPIDO}

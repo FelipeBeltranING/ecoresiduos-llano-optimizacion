@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, model_validator
 from app.db.models import Metodo
 
 
-# Parámetros del AG que llegan desde la interfaz (HU-09)
 class ParametrosAGEntrada(BaseModel):
     tamano_poblacion: int = Field(default=100, ge=10)
     generaciones: int = Field(default=300, ge=1)
@@ -26,7 +25,6 @@ class ParametrosAGEntrada(BaseModel):
         return self
 
 
-# Resumen de una ejecución recién creada
 class EjecucionCreada(BaseModel):
     id: uuid.UUID
     metodo: Metodo
@@ -35,7 +33,6 @@ class EjecucionCreada(BaseModel):
     tiempo_ms: float | None
 
 
-# Flujo de una ruta en el resultado
 class FlujoSalida(BaseModel):
     origen: str
     destino: str
@@ -43,7 +40,6 @@ class FlujoSalida(BaseModel):
     costo_unitario: float
 
 
-# Dual, holgura o costo reducido de un nodo o de una ruta
 class SensibilidadSalida(BaseModel):
     tipo: str
     elemento: str
@@ -52,14 +48,12 @@ class SensibilidadSalida(BaseModel):
     rango_sup: float | None
 
 
-# Mejor costo y costo promedio de una generación del AG
 class ConvergenciaSalida(BaseModel):
     generacion: int
     mejor_costo: float
     costo_promedio: float
 
 
-# Detalle completo de una ejecución
 class EjecucionDetalle(EjecucionCreada):
     violaciones: float | None = None
     escenario_id: uuid.UUID | None = None

@@ -34,21 +34,18 @@ UMBRAL_FLUJO = 1e-9
 ESTADO_TERMINADA = "Terminada"
 
 
-# Error cuando la red no se puede optimizar (por ejemplo, un nodo aislado)
 class RedNoValidaError(Exception):
     def __init__(self, mensajes: list[str]) -> None:
         super().__init__("; ".join(mensajes))
         self.mensajes = mensajes
 
 
-# Validación de la red armada desde la base
 def validar_red(sesion: Session) -> ResultadoValidacion:
     constructor = RedBuilder(sesion)
     red = constructor.construir()
     return constructor.crear_validador().validar(red)
 
 
-# Red lista para un motor: válida y balanceada con planta ficticia si hace falta
 def preparar_red(sesion: Session) -> RedLogistica:
     constructor = RedBuilder(sesion)
     red = constructor.construir()
@@ -68,7 +65,6 @@ CAMPOS_ACOPIO = (
 )
 
 
-# Copia de la red en formato JSON para guardar con la ejecución
 def snapshot_de_red(red: RedLogistica) -> dict:
     snapshot = {
         "empresas": red.codigos_empresas,
@@ -86,7 +82,6 @@ def snapshot_de_red(red: RedLogistica) -> dict:
     return snapshot
 
 
-# Red reconstruida desde el snapshot guardado con una ejecución
 def red_desde_snapshot(snapshot: dict) -> RedLogistica:
     operacion = snapshot.get("costo_operacion")
     acopios = {}
@@ -107,7 +102,6 @@ def red_desde_snapshot(snapshot: dict) -> RedLogistica:
     )
 
 
-# Guardado de los flujos mayores que cero (con acopios, también empresa → acopio → planta)
 def guardar_flujos(
     sesion: Session, ejecucion: Ejecucion, red: RedLogistica, flujos, resultado=None
 ) -> None:
@@ -154,14 +148,12 @@ def guardar_flujos_de_acopios(sesion, ejecucion, red: RedLogistica, resultado, i
                 )
 
 
-# Violaciones de una solución (incluye conservación y capacidad de los acopios)
 def violaciones_de(red: RedLogistica, resultado) -> float:
     return verificar_solucion(
         red, resultado.flujos, resultado.flujos_a_acopio, resultado.flujos_desde_acopio
     ).total
 
 
-# Guardado de duales, holguras y costos reducidos del modelo exacto
 def guardar_sensibilidad_exacto(
     sesion: Session, ejecucion: Ejecucion, red: RedLogistica, resultado: ResultadoExacto
 ) -> None:
@@ -219,7 +211,6 @@ def guardar_sensibilidad_exacto(
             )
 
 
-# Ejecución del modelo exacto y guardado de su resultado
 def ejecutar_exacto(
     sesion: Session,
     red: RedLogistica | None = None,
@@ -253,7 +244,6 @@ def ejecutar_exacto(
     return ejecucion
 
 
-# Parámetros del AG: lambda sale de parametro_global si no se envía
 def convertir_parametros_ag(sesion: Session, entrada: ParametrosAGEntrada) -> ParametrosAG:
     lambda_pen = entrada.lambda_pen
     if lambda_pen is None:
@@ -271,7 +261,6 @@ def convertir_parametros_ag(sesion: Session, entrada: ParametrosAGEntrada) -> Pa
     )
 
 
-# Guardado de la convergencia del AG
 def guardar_convergencia(
     sesion: Session, ejecucion: Ejecucion, resultado: ResultadoGenetico
 ) -> None:
@@ -285,7 +274,6 @@ def guardar_convergencia(
         )
 
 
-# Ejecución del AG y guardado de su resultado
 def ejecutar_genetico(
     sesion: Session,
     entrada: ParametrosAGEntrada,
@@ -299,7 +287,6 @@ def ejecutar_genetico(
     return guardar_genetico(sesion, red, parametros, resultado, escenario_id)
 
 
-# Guardado de una corrida del AG ya calculada
 def guardar_genetico(
     sesion: Session,
     red: RedLogistica,
@@ -330,7 +317,6 @@ def guardar_genetico(
     return ejecucion
 
 
-# Detalle de una ejecución con flujos, sensibilidad y convergencia
 def obtener_detalle(sesion: Session, ejecucion_id: uuid.UUID) -> EjecucionDetalle | None:
     ejecucion = ejecucion_repository.buscar_ejecucion(sesion, ejecucion_id)
     if ejecucion is None:

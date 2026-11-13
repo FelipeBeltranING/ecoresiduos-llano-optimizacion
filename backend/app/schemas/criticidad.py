@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 
-# Criticidad de una planta o un acopio (HU-20)
 class CriticidadNodoSalida(BaseModel):
     codigo: str
     nombre: str | None = None

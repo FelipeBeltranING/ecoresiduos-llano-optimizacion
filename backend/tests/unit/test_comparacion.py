@@ -8,7 +8,6 @@ from app.schemas.analisis import ComparacionEntrada
 from app.services.analisis_service import cambio_de_asignacion, ids_de_escenarios
 
 
-# Los diez escenarios por defecto salen del criterio de HU-13
 def test_la_comparacion_usa_diez_corridas_por_defecto() -> None:
     assert ComparacionEntrada().corridas == 10
 

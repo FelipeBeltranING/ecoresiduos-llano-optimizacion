@@ -27,7 +27,7 @@ function ticks(minimo: number, maximo: number, cantidad: number): number[] {
 export function ConvergenciaChart({ puntos, optimo, className = "" }: ConvergenciaChartProps) {
   if (puntos.length === 0) return null;
 
-  // El promedio inicial puede ser enorme (penalizaciones); se recorta al percentil 90
+  
   const promedios = [...puntos.map((p) => p.promedio)].sort((a, b) => a - b);
   const techo = promedios[Math.floor(promedios.length * 0.9)] ?? promedios[promedios.length - 1];
   const valores = [...puntos.map((p) => p.mejor), techo, ...(optimo ? [optimo] : [])];

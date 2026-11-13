@@ -7,7 +7,6 @@ from app.optimizacion.red import RedLogistica
 TOLERANCIA = 1e-6
 
 
-# Resultado de revisar una solución contra las restricciones del modelo
 @dataclass
 class ReporteVerificacion:
     violacion_oferta: float
@@ -33,8 +32,6 @@ class ReporteVerificacion:
         return self.total <= TOLERANCIA * 10
 
 
-# Verificación de oferta (=), capacidad (<=), no negatividad y rutas habilitadas (RF-09)
-# Con acopios revisa además la conservación de flujo y la capacidad de cada acopio (HU-17)
 def verificar_solucion(
     red: RedLogistica,
     flujos: np.ndarray,
@@ -80,7 +77,6 @@ def verificar_solucion(
     return reporte
 
 
-# Acopios: lo que entra es igual a lo que sale, cabe en el acopio y usa arcos abiertos
 def verificar_acopios(
     red: RedLogistica, a_acopio: np.ndarray, desde_acopio: np.ndarray, reporte: ReporteVerificacion
 ) -> None:

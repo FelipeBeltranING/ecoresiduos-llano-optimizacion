@@ -5,7 +5,6 @@ from app.optimizacion.verificador import verificar_solucion
 from tests.utilidades import construir_red_caso_base
 
 
-# La solución óptima no viola ninguna restricción (RF-09)
 def test_solucion_exacta_es_factible() -> None:
     red = construir_red_caso_base()
     resultado = resolver_exacto(red)
@@ -16,7 +15,6 @@ def test_solucion_exacta_es_factible() -> None:
     assert reporte.detalles == []
 
 
-# Una solución que excede la capacidad se reporta con su detalle
 def test_detecta_exceso_de_capacidad() -> None:
     red = construir_red_caso_base()
     flujos = np.zeros((red.numero_empresas(), red.numero_plantas()))

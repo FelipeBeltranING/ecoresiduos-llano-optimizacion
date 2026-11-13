@@ -20,14 +20,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Tipos de nodo de la red
 class TipoNodo(enum.StrEnum):
     FUENTE = "FUENTE"
     ACOPIO = "ACOPIO"
     PLANTA = "PLANTA"
 
 
-# Tabla nodo: empresas, centros de acopio y plantas
 class Nodo(Base):
     __tablename__ = "nodo"
     __table_args__ = (

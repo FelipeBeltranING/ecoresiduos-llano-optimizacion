@@ -44,7 +44,6 @@ def _gap(costo: float, optimo: float) -> float:
     return 0.0 if optimo == 0 else (costo - optimo) / optimo * 100
 
 
-# ---------- Registro y consulta de análisis ----------
 
 
 def crear_registro(
@@ -103,7 +102,6 @@ def _terminar(motor: Engine, analisis_id: uuid.UUID, estado: str, resultado: dic
         sesion.commit()
 
 
-# ---------- Comparativo exacto vs. AG (HU-13) ----------
 
 
 def red_para_comparar(sesion: Session, escenario_id: uuid.UUID | None):
@@ -117,7 +115,6 @@ def red_para_comparar(sesion: Session, escenario_id: uuid.UUID | None):
     return balancear(aplicar_ajustes(red, [Ajuste(**a) for a in escenario.ajustes]), penalizacion)
 
 
-# Escenarios a comparar: el campo singular se conserva por compatibilidad
 def ids_de_escenarios(datos: ComparacionEntrada) -> list[uuid.UUID]:
     ids: list[uuid.UUID] = []
     if datos.escenario_id is not None:
@@ -126,12 +123,9 @@ def ids_de_escenarios(datos: ComparacionEntrada) -> list[uuid.UUID]:
     return ids
 
 
-# Porcentaje de toneladas que cambian de planta frente a la red base
 def cambio_de_asignacion(flujos_base: np.ndarray, flujos: np.ndarray) -> float:
     base = np.asarray(flujos_base, dtype=float)
     actual = np.asarray(flujos, dtype=float)
-    # Una red puede agregar la planta ficticia y la otra no; se comparan las
-    # plantas reales comunes para que el cambio de asignación sea comparable.
     if base.ndim == 2 and actual.ndim == 2 and base.shape[1] != actual.shape[1]:
         columnas = min(base.shape[1], actual.shape[1])
         base = base[:, :columnas]
@@ -142,7 +136,6 @@ def cambio_de_asignacion(flujos_base: np.ndarray, flujos: np.ndarray) -> float:
     return float(np.abs(base - actual).sum()) / total * 100
 
 
-# Exacto + N corridas del AG sobre una red; devuelve el bloque del reporte
 def evaluar_red(
     sesion: Session,
     red: RedLogistica,
@@ -209,7 +202,6 @@ def evaluar_red(
     }
 
 
-# Una fila del reporte comparativo por escenario (HU-13)
 def fila_comparacion(
     escenario_id: uuid.UUID | None,
     nombre: str,
@@ -258,7 +250,6 @@ def ejecutar_comparacion(motor: Engine, analisis_id: uuid.UUID, entrada: dict) -
                     fila_comparacion(escenario_id, escenario.nombre, evaluacion, base["flujos"])
                 )
 
-            # Con un único escenario el reporte principal sigue siendo ese escenario
             principal = base
             if datos.escenario_id is not None and not datos.escenarios:
                 principal = evaluados[datos.escenario_id]
@@ -279,7 +270,6 @@ def ejecutar_comparacion(motor: Engine, analisis_id: uuid.UUID, entrada: dict) -
         _terminar(motor, analisis_id, ESTADO_ERROR, {"error": str(error)})
 
 
-# ---------- Escalabilidad (HU-14) ----------
 
 
 def ejecutar_escalabilidad(motor: Engine, analisis_id: uuid.UUID, entrada: dict) -> None:
@@ -322,7 +312,6 @@ def iniciar(
             raise AnalisisNoEncontradoError(f"No existe el escenario {escenario_id}")
     if tipo == TIPO_COMPARACION:
         ejecucion_service.preparar_red(sesion)
-    # El registro guarda un escenario solo cuando la comparación es de uno
     return crear_registro(
         sesion, tipo, entrada.model_dump(mode="json"), ids[0] if len(ids) == 1 else None
     )
@@ -331,7 +320,6 @@ def iniciar(
 TAREAS = {TIPO_COMPARACION: ejecutar_comparacion, TIPO_ESCALABILIDAD: ejecutar_escalabilidad}
 
 
-# ---------- Historial de ejecuciones (HU-15) ----------
 
 
 def historial(

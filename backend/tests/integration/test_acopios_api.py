@@ -9,7 +9,6 @@ from tests.utilidades import Z_OPTIMO_CASO_BASE, Z_OPTIMO_CON_ACOPIOS
 ACOPIOS = "(SELECT id FROM nodo WHERE codigo IN ('A01', 'A02'))"
 
 
-# Caso base con acopios; al final se borran para no afectar a las demás pruebas
 @pytest.fixture
 def cliente(cliente_pruebas: TestClient, motor_pruebas: Engine) -> Iterator[TestClient]:
     cliente_pruebas.post("/api/v1/datos/caso-base")
