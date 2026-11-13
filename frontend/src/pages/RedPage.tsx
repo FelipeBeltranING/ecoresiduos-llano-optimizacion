@@ -1,5 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, Plus, Power, Upload } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import {
   URL_EXPORTAR_RED,
@@ -29,7 +32,47 @@ const pestanas = [
   { label: "Centros de acopio", value: "ACOPIO" },
 ];
 
-const vacio = {
+const numero = (texto: string) => Number(texto.replace(",", "."));
+
+const esquemaNodo = z.object({
+  codigo: z.string().trim().min(1, "Obligatorio").max(10, "Máximo 10 caracteres"),
+  nombre: z.string().trim().min(1, "Obligatorio"),
+  municipio: z.string().trim().min(1, "Obligatorio"),
+  tipo_residuo: z.string(),
+  costo_operacion_t: z
+    .string()
+    .trim()
+    .refine((valor) => valor === "" || (Number.isFinite(numero(valor)) && numero(valor) >= 0), {
+      message: "Costo inválido",
+    }),
+  cantidad: z
+    .string()
+    .trim()
+    .min(1, "Obligatoria")
+    .refine((valor) => Number.isFinite(numero(valor)) && numero(valor) > 0, {
+      message: "Debe ser mayor que 0",
+    }),
+  latitud: z
+    .string()
+    .trim()
+    .min(1, "Obligatoria")
+    .refine(
+      (valor) => Number.isFinite(numero(valor)) && numero(valor) >= -90 && numero(valor) <= 90,
+      { message: "Entre -90 y 90" },
+    ),
+  longitud: z
+    .string()
+    .trim()
+    .min(1, "Obligatoria")
+    .refine(
+      (valor) => Number.isFinite(numero(valor)) && numero(valor) >= -180 && numero(valor) <= 180,
+      { message: "Entre -180 y 180" },
+    ),
+});
+
+type FormNodo = z.infer<typeof esquemaNodo>;
+
+const vacio: FormNodo = {
   codigo: "",
   nombre: "",
   municipio: "",
@@ -39,8 +82,6 @@ const vacio = {
   latitud: "",
   longitud: "",
 };
-
-const numero = (texto: string) => Number(texto.replace(",", "."));
 
 function FilaNodo({ nodo }: { nodo: Nodo }) {
   const actualizar = useActualizarNodo();
@@ -112,9 +153,19 @@ export function RedPage() {
   const importar = useImportarRed();
   const fuentes = useFuentesCasoReal();
   const [tipo, setTipo] = useState<TipoNodo>("FUENTE");
-  const [form, setForm] = useState(vacio);
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const archivo = useRef<HTMLInputElement>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormNodo>({
+    resolver: zodResolver(esquemaNodo),
+    defaultValues: vacio,
+  });
 
   const nodosActivos = activos(nodos.data);
   const lista = (nodos.data ?? []).filter((n) => n.tipo === tipo && (mostrarInactivos || n.activo));
@@ -125,31 +176,27 @@ export function RedPage() {
   const esCasoReal = empresas.some((e) => e.codigo.startsWith("R"));
   const esFuente = tipo === "FUENTE";
 
-  const cambiar = (campo: keyof typeof vacio) => (e: { target: { value: string } }) =>
-    setForm((f) => ({ ...f, [campo]: e.target.value }));
-
-  const enviar = (evento: FormEvent) => {
-    evento.preventDefault();
-    const cantidad = numero(form.cantidad);
+  const enviar = (datos: FormNodo) => {
+    const cantidad = numero(datos.cantidad);
     const entrada: NodoEntrada = {
-      codigo: form.codigo.trim().toUpperCase(),
+      codigo: datos.codigo.toUpperCase(),
       tipo,
-      nombre: form.nombre.trim(),
-      municipio: form.municipio.trim(),
-      tipo_residuo: esFuente ? form.tipo_residuo.trim() || null : null,
+      nombre: datos.nombre,
+      municipio: datos.municipio,
+      tipo_residuo: esFuente ? datos.tipo_residuo.trim() || null : null,
       oferta_t: esFuente ? cantidad : null,
       capacidad_t: esFuente ? null : cantidad,
-      costo_operacion_t: esFuente ? 0 : numero(form.costo_operacion_t || "0"),
-      latitud: numero(form.latitud),
-      longitud: numero(form.longitud),
+      costo_operacion_t: esFuente ? 0 : numero(datos.costo_operacion_t || "0"),
+      latitud: numero(datos.latitud),
+      longitud: numero(datos.longitud),
     };
-    crear.mutate(entrada, { onSuccess: () => setForm(vacio) });
+    crear.mutate(entrada, { onSuccess: () => reset(vacio) });
   };
 
+  const latitud = watch("latitud");
+  const longitud = watch("longitud");
   const punto =
-    form.latitud && form.longitud
-      ? ([numero(form.latitud), numero(form.longitud)] as [number, number])
-      : null;
+    latitud && longitud ? ([numero(latitud), numero(longitud)] as [number, number]) : null;
 
   return (
     <>
@@ -301,9 +348,10 @@ export function RedPage() {
                 mostrarRutas
                 alto="h-[380px]"
                 puntoNuevo={punto}
-                onClicMapa={(lat, lon) =>
-                  setForm((f) => ({ ...f, latitud: lat.toFixed(5), longitud: lon.toFixed(5) }))
-                }
+                onClicMapa={(lat, lon) => {
+                  setValue("latitud", lat.toFixed(5), { shouldValidate: true });
+                  setValue("longitud", lon.toFixed(5), { shouldValidate: true });
+                }}
               />
             </div>
           </Tarjeta>
@@ -317,55 +365,61 @@ export function RedPage() {
             Las rutas hacia (o desde) los demás nodos se crean solas con la distancia vial real
             (OSRM) o, sin conexión, con Haversine × 1,3.
           </p>
-          <form className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={enviar}>
+          <form
+            className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            onSubmit={handleSubmit(enviar)}
+            noValidate
+          >
             <Campo
               etiqueta="Código"
-              value={form.codigo}
-              onChange={cambiar("codigo")}
-              required
+              {...register("codigo")}
+              estado={errors.codigo ? "error" : "normal"}
+              ayuda={errors.codigo?.message}
               maxLength={10}
               placeholder="E11"
             />
-            <Campo etiqueta="Nombre" value={form.nombre} onChange={cambiar("nombre")} required />
+            <Campo
+              etiqueta="Nombre"
+              {...register("nombre")}
+              estado={errors.nombre ? "error" : "normal"}
+              ayuda={errors.nombre?.message}
+            />
             <Campo
               etiqueta="Municipio"
-              value={form.municipio}
-              onChange={cambiar("municipio")}
-              required
+              {...register("municipio")}
+              estado={errors.municipio ? "error" : "normal"}
+              ayuda={errors.municipio?.message}
             />
             {esFuente ? (
-              <Campo
-                etiqueta="Tipo de residuo"
-                value={form.tipo_residuo}
-                onChange={cambiar("tipo_residuo")}
-              />
+              <Campo etiqueta="Tipo de residuo" {...register("tipo_residuo")} />
             ) : (
               <Campo
                 etiqueta="Costo de operación (COP/t)"
-                value={form.costo_operacion_t}
-                onChange={cambiar("costo_operacion_t")}
+                {...register("costo_operacion_t")}
+                estado={errors.costo_operacion_t ? "error" : "normal"}
+                ayuda={errors.costo_operacion_t?.message}
                 inputMode="decimal"
               />
             )}
             <Campo
               etiqueta={esFuente ? "Oferta (t/semana)" : "Capacidad (t/semana)"}
-              value={form.cantidad}
-              onChange={cambiar("cantidad")}
-              required
+              {...register("cantidad")}
+              estado={errors.cantidad ? "error" : "normal"}
+              ayuda={errors.cantidad?.message}
               inputMode="decimal"
             />
             <Campo
               etiqueta="Latitud"
-              value={form.latitud}
-              onChange={cambiar("latitud")}
-              required
+              {...register("latitud")}
+              estado={errors.latitud ? "error" : "normal"}
+              ayuda={errors.latitud?.message}
               inputMode="decimal"
             />
             <Campo
               etiqueta="Longitud"
-              value={form.longitud}
-              onChange={cambiar("longitud")}
-              required
+              {...register("longitud")}
+              estado={errors.longitud ? "error" : "normal"}
+              ayuda={errors.longitud?.message}
               inputMode="decimal"
             />
             <div className="flex items-end">

@@ -1,5 +1,5 @@
 import { CircleAlert, CircleCheck } from "lucide-react";
-import type { InputHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes } from "react";
 
 type Estado = "normal" | "exito" | "error";
 
@@ -16,14 +16,10 @@ const estados: Record<Estado, string> = {
   error: "border-danger",
 };
 
-export function Campo({
-  etiqueta,
-  ayuda,
-  estado = "normal",
-  id,
-  contenedorClassName = "",
-  ...props
-}: CampoProps) {
+export const Campo = forwardRef<HTMLInputElement, CampoProps>(function Campo(
+  { etiqueta, ayuda, estado = "normal", id, contenedorClassName = "", ...props },
+  ref,
+) {
   const inputId = id ?? `campo-${etiqueta.toLowerCase().replace(/\s+/g, "-")}`;
   const Icono = estado === "error" ? CircleAlert : CircleCheck;
   const ayudaColor =
@@ -36,6 +32,7 @@ export function Campo({
       </label>
       <div className="relative">
         <input
+          ref={ref}
           id={inputId}
           className={[
             "h-10 w-full rounded-control border bg-surface px-3 text-sm text-text outline-none transition-colors",
@@ -59,4 +56,4 @@ export function Campo({
       {ayuda ? <p className={["text-xs leading-4", ayudaColor].join(" ")}>{ayuda}</p> : null}
     </div>
   );
-}
+});
