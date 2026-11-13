@@ -5,7 +5,7 @@
 ## Antes de entrar (15 min antes)
 
 1. Levantar todo local: `docker compose up` (plan A) o la versión desplegada (si existe).
-2. **Calentar el solver:** cargar el caso base y ejecutar el exacto una vez. En Windows, la primera llamada a CBC puede tardar más de 20 s y la interfaz la corta; desde la segunda tarda menos de 1 s.
+2. **Calentar la API:** cargar el caso base y ejecutar el exacto una vez antes de presentar. El exacto (MODI propio, sin solver externo) resuelve el caso base en milisegundos.
 3. Dejar abiertas cuatro pestañas: Panel, Exacto, Sensibilidad y Riesgo.
 4. Tener a mano los PDF de respaldo (comparativo y exacto) en `Orion/Artefactos/02_Reportes`.
 
@@ -40,7 +40,8 @@
 ## Preguntas probables
 
 - **¿Por qué la planta ficticia?** Si la oferta supera la capacidad, el modelo sería infactible. La ficticia absorbe el exceso con una penalización de 10⁶ COP/t y muestra cuántas toneladas no caben.
-- **¿Por qué usar un AG si el exacto es más rápido?** Para este modelo lineal, el exacto domina. El AG sirve cuando entran costos fijos o no linealidades; su estructura no cambia.
+- **¿Por qué usar un AG si el exacto da el óptimo?** En redes pequeñas el exacto es más rápido, pero nuestro MODI en Python tarda entre 5 y 11 s en 100 × 20, lo mismo que el AG (brecha de 0,91 %). Además, el AG sirve cuando entran costos fijos o no linealidades; su estructura no cambia.
+- **¿Por qué no usan PuLP?** Se usó en el Sprint 1. En el PR #58 el exacto pasó a un transbordo con flujo máximo y MODI propios, sin solver externo; los valores de referencia (Z*, duales, escenarios) no cambiaron.
 - **¿Cómo se calculan los rangos?** Con re-optimización paramétrica: se mueve cada parámetro hasta que cambia la base óptima (o los duales), con búsqueda y bisección.
 - **¿Qué significa ρ = 0,80?** Que el ranking del ICE y el ranking del impacto real se parecen mucho. Con 4 plantas es evidencia preliminar, y así lo decimos.
 - **¿Los acopios siempre ahorran?** No. Sin flete consolidado, ir por el acopio cuesta más que ir directo. El ahorro sale de la tarifa de 200 frente a 350 COP/t·km.

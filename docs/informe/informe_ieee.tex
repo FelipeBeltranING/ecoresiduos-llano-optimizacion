@@ -29,7 +29,8 @@ Villavicencio, Colombia}}
 EcoResiduos del Llano recoge residuos agroindustriales (palma, arroz, ganadería y forestal) en el
 departamento del Meta y los lleva a plantas de aprovechamiento. La asignación empírica de rutas
 genera sobrecostos. Este trabajo modela la red como un grafo dirigido y resuelve el problema de flujo
-de costo mínimo con dos métodos: un modelo de programación lineal (PuLP + CBC) y un algoritmo genético
+de costo mínimo con dos métodos: un modelo exacto de transporte con transbordo (flujo máximo y MODI
+implementados en Python) y un algoritmo genético
 (AG) con reparación de factibilidad. El sistema permite editar la red en línea, analizar escenarios
 de sensibilidad (combustible, oferta y cuellos de botella), obtener precios sombra y rangos de
 estabilidad, y comparar ambos métodos en costo, tiempo y brecha. Además, se incorporan centros de
@@ -127,7 +128,8 @@ individuos son factibles y la penalización solo actúa como respaldo.
 
 \section{Arquitectura del sistema}
 El sistema sigue una arquitectura por capas. El backend (FastAPI, Python~3.12) expone una API REST
-con módulos independientes: \emph{red} (estructura y validación), \emph{exacto} (PuLP + CBC),
+con módulos independientes: \emph{red} (estructura y validación), \emph{exacto} (transporte expandido con acopios: solución inicial por flujo máximo de Edmonds-Karp y
+optimización con MODI~\cite{hillier}, en Python y NumPy, sin solver externo),
 \emph{genético}, \emph{sensibilidad} (re-optimización paramétrica con HiGHS~\cite{highs}) y
 \emph{criticidad} (ICE). Los datos persisten en PostgreSQL con migraciones versionadas (Alembic). El
 frontend (React + TypeScript) ofrece pantallas de red, rutas, exacto, genético, sensibilidad, riesgo,
@@ -150,7 +152,7 @@ hacia Puerto Gaitán y Granada, con flete consolidado de 200~COP/t·km hacia las
 
 \section{Resultados}
 \subsection{Solución óptima}
-En el caso base, $Z^* = 64\,691\,000$~COP/semana (CBC, 30~ms). Villavicencio y Restrepo quedan
+En el caso base, $Z^* = 64\,691\,000$~COP/semana (MODI, menos de 10~ms). Villavicencio y Restrepo quedan
 saturadas, con precios sombra de $-17\,750$ y $-14\,250$~COP/t: cada tonelada adicional de capacidad
 en Villavicencio ahorraría 17\,750~COP por semana. Granada (5~t libres) y Puerto Gaitán (55~t) tienen
 precio sombra cero. En el caso real, $Z^* = 59\,295\,262$~COP/semana, sin planta ficticia.
@@ -182,9 +184,11 @@ Villavicencio $-30$\,\%$^{\dagger}$ & 93{,}89 & +45{,}1\,\% & 0{,}00\,\% \\
 
 \subsection{Comparativo exacto frente al AG}
 En 10 corridas sobre el caso base (población 100, hasta 300 generaciones), el AG alcanzó el óptimo en
-todas (brecha media $<10^{-7}$\,\%), con un tiempo medio de 1{,}9~s frente a 30~ms del exacto. En
-instancias sintéticas reproducibles del Meta (Tabla~\ref{tab:escala}), la brecha crece con el tamaño y
-el exacto sigue siendo más rápido: para un problema lineal de este tamaño, el método exacto domina. El
+todas (brecha media $<10^{-7}$\,\%), con un tiempo medio de 1{,}9~s frente a milisegundos del exacto. En
+instancias sintéticas reproducibles del Meta (Tabla~\ref{tab:escala}), la brecha del AG crece con el tamaño
+pero no supera el 1\,\%. El exacto propio (MODI) es mucho más rápido en redes pequeñas, pero su tiempo
+crece rápido: en $100\times20$ tarda entre 5 y 11~s según la máquina, igual o más que el AG. Con un
+solver de programación lineal de código abierto (CBC, usado en el Sprint~1) el mismo caso tomaba 0{,}2~s. El
 valor del AG está en que tolera extensiones no lineales (costos fijos, economías de escala) sin
 cambiar su estructura.
 
@@ -196,10 +200,10 @@ cambiar su estructura.
 \toprule
 Empresas $\times$ plantas & Exacto (ms) & AG (s) & Brecha AG \\
 \midrule
-$10\times4$ & 51 & 3{,}0 & 0{,}00\,\% \\
-$30\times8$ & 61 & 4{,}0 & 0{,}19\,\% \\
-$50\times10$ & 70 & 8{,}6 & 0{,}48\,\% \\
-$100\times20$ & 216 & 9{,}8 & 0{,}91\,\% \\
+$10\times4$ & 13 & 1{,}8 & 0{,}00\,\% \\
+$30\times8$ & 92 & 2{,}1 & 0{,}19\,\% \\
+$50\times10$ & 339 & 4{,}5 & 0{,}48\,\% \\
+$100\times20$ & 5\,368 & 5{,}2 & 0{,}91\,\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -230,9 +234,10 @@ impacto ($\rho=0{,}95$). Con solo 4 a 6 nodos, estos resultados son evidencia pr
 validación concluyente; constituyen la prueba empírica que el artículo dejó como trabajo futuro.
 
 \section{Conclusiones y trabajo futuro}
-El modelo exacto resuelve el problema en milisegundos y entrega la información de gestión más útil:
-qué plantas están saturadas y cuánto vale ampliarlas. El AG, con reparación por recursos, alcanza el
-óptimo en el caso base y se mantiene por debajo del 1\,\% de brecha en instancias de 100 empresas. La
+El modelo exacto resuelve los casos del Meta en milisegundos y entrega la información de gestión más
+útil: qué plantas están saturadas y cuánto vale ampliarlas. El AG, con reparación por recursos, alcanza
+el óptimo en el caso base y se mantiene por debajo del 1\,\% de brecha en instancias de 100 empresas,
+donde ya tarda lo mismo que el exacto implementado en Python. La
 red es sensible sobre todo a la capacidad: la ampliación de Villavicencio es la inversión prioritaria,
 y los centros de acopio con flete consolidado reducen el costo un 4{,}5\,\%. El ICE identifica la
 misma planta crítica que la simulación de fallas y ofrece una lectura de riesgo comprensible para la

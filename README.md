@@ -61,7 +61,7 @@ Diseñar y desarrollar una solución computacional web basada en modelos de opti
 ### Objetivos específicos
 
 - Estructurar y parametrizar el problema de transporte y flujo en redes con la oferta de las empresas y la capacidad de procesamiento de las plantas, sin límite fijo de nodos.
-- Implementar el modelo matemático exacto en Python (PuLP + CBC) para hallar el óptimo global.
+- Implementar el modelo matemático exacto en Python (transporte con transbordo: flujo máximo y MODI, sin solver externo) para hallar el óptimo global.
 - Diseñar e implementar un Algoritmo Genético (AG) adaptado a la asignación de flujos de la red para obtener soluciones cuasi-óptimas.
 - Realizar el análisis de sensibilidad ante variaciones en costos unitarios, oferta y demanda.
 - Comparar el método exacto y el AG en calidad de la función objetivo, tiempo de cómputo, escalabilidad y respuesta ante escenarios de sensibilidad.
@@ -143,7 +143,7 @@ $$\sum_{e \in \delta^-(t)} x_e - \sum_{e \in \delta^+(t)} x_e = 0, \qquad \sum_{
 
 | Componente | Diseño |
 |---|---|
-| **Cromosoma** | Vector real de longitud $m \cdot n$ (o $\|E\|$ con acopios) que representa la matriz de flujos $x_{ij}$ |
+| **Cromosoma** | Matriz real empresa × camino: sin acopios es la matriz de flujos $x_{ij}$ ($m \cdot n$); con acopios cada columna es un camino $i \to j$ o $i \to t \to j$ |
 | **Población inicial** | 10 % construida con la heurística de costo mínimo y 90 % aleatoria, que reparte la oferta $a_i$ de cada empresa |
 | **Función de aptitud** | $f = \dfrac{1}{Z + \lambda \cdot \text{Pen}}$, con $\text{Pen} = \sum_i \left\| \sum_j x_{ij} - a_i \right\| + \sum_j \max\left(0, \sum_i x_{ij} - b_j\right)$ |
 | **Selección** | Torneo ($k = 3$) o ruleta (configurable) |
@@ -188,11 +188,11 @@ $$\text{Gap}(\%) = \frac{Z_{AG} - Z^{*}}{Z^{*}} \times 100$$
 |---|---|
 | **Frontend** | React 18 + TypeScript, Vite, Tailwind CSS, React Router, TanStack Query + Axios, React Hook Form + Zod, React Leaflet + OpenStreetMap (mapa real), gráficas SVG propias |
 | **Backend** | Python 3.12, FastAPI + Uvicorn, Pydantic v2 |
-| **Optimización** | PuLP + CBC (modelo exacto, duales y holguras), NumPy (AG), NetworkX (validación del grafo) |
+| **Optimización** | Transbordo + MODI propio en NumPy (modelo exacto, duales y holguras), NumPy (AG), SciPy/HiGHS (sensibilidad e ICE) |
 | **Datos** | Supabase PostgreSQL 17, SQLAlchemy 2.0 (ORM), Alembic (migraciones), psycopg 3 |
-| **Reportes** | Pandas + openpyxl (Excel), ReportLab + Matplotlib (PDF) |
+| **Reportes** | Pandas + openpyxl (Excel), ReportLab (PDF) |
 | **Calidad** | pytest, pytest-cov, httpx, Vitest + Testing Library, Playwright, Ruff, ESLint, Prettier |
-| **DevOps** | Docker + Docker Compose, GitHub Actions, Vercel (frontend), Render (backend) |
+| **DevOps** | Docker + Docker Compose (PostgreSQL, API y frontend con Nginx), GitHub Actions; despliegue en Vercel y Render pendiente |
 
 > **Nota:** SQLAlchemy y Alembic son los equivalentes en Python de Hibernate y Flyway (Java).
 
@@ -342,7 +342,7 @@ Prefijo `/api/v1`. Documentación interactiva en `/docs`.
 | `GET` | `/rutas/matriz` | Matriz de distancias, costo unitario y trazado vial | 03, 18 |
 | `PUT` · `POST` | `/rutas` · `/rutas/generar-faltantes` | Edición por lote y rutas faltantes | 03 |
 | `GET` `PUT` | `/parametros` · `/parametros/{clave}` | Parámetros globales | 04 |
-| `POST` | `/datos/caso-base` · `/datos/caso-real` | Cargar el caso base o el caso real del Meta | 05, 19 |
+| `POST` | `/datos/caso-base` · `/datos/caso-real` · `/datos/acopios` | Cargar el caso base, el caso real del Meta o los centros de acopio de Puerto López y San Martín | 05, 19, 17 |
 | `GET` · `POST` | `/datos/exportar` · `/datos/importar` | Excel de la red; importación con validación por fila | 05 |
 | `GET` | `/datos/caso-real/fuentes` | Fuentes y coeficientes del caso real | 19 |
 | `GET` | `/red/validacion` | Balance, planta ficticia y nodos aislados | 06 |
@@ -353,6 +353,8 @@ Prefijo `/api/v1`. Documentación interactiva en `/docs`.
 | `POST` | `/analisis/comparacion` · `/analisis/escalabilidad` | Comparativo y escalabilidad en segundo plano | 13, 14 |
 | `GET` | `/analisis` · `/analisis/{id}` | Estado y resultado de los análisis | 13, 14 |
 | `GET` | `/reportes/ejecuciones/{id}.pdf\|xlsx` · `/reportes/analisis/{id}.pdf\|xlsx` | Reportes PDF y Excel | 16 |
+| `GET` | `/criticidad?alfa=&beta=&gamma=` | Índice de criticidad estructural (ICE) y fallas simuladas | 20 |
+| `GET` | `/health` | Estado de la API | — |
 
 ## 14. Datos de prueba
 
