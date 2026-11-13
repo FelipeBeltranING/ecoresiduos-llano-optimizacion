@@ -7,14 +7,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
 
-# Tipos de resultado de sensibilidad que guarda el backend
 DUAL_OFERTA = "DUAL_OFERTA"
 DUAL_CAPACIDAD = "DUAL_CAPACIDAD"
 HOLGURA_CAPACIDAD = "HOLGURA_CAPACIDAD"
 COSTO_REDUCIDO = "COSTO_REDUCIDO"
 
 
-# Tabla sensibilidad_resultado: duales, holguras, costos reducidos y rangos de una ejecución
 class SensibilidadResultado(Base):
     __tablename__ = "sensibilidad_resultado"
     __table_args__ = (

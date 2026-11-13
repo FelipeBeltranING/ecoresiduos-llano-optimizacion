@@ -2,7 +2,6 @@ import numpy as np
 
 from app.optimizacion.red import RedLogistica
 
-# Caja aproximada del departamento del Meta (latitud, longitud)
 LAT_MIN, LAT_MAX = 2.6, 4.9
 LON_MIN, LON_MAX = -74.4, -71.1
 FACTOR_TORTUOSIDAD = 1.3
@@ -16,7 +15,6 @@ def _haversine_matriz(lat1, lon1, lat2, lon2) -> np.ndarray:
     return 2 * 6371.0 * np.arcsin(np.sqrt(a))
 
 
-# Instancia sintética reproducible de m empresas y n plantas (HU-14)
 def generar_instancia(
     m: int, n: int, semilla: int = 0, costo_km: float = 350, holgura: float = 1.1
 ) -> RedLogistica:

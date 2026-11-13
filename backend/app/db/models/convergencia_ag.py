@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Tabla convergencia_ag: mejor costo y costo promedio por generación del AG
 class ConvergenciaAG(Base):
     __tablename__ = "convergencia_ag"
     __table_args__ = (

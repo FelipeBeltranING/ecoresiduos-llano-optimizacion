@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.db.models import Ruta
 
 
-# Inserta o actualiza la ruta entre un origen y un destino
 def guardar_ruta(
     sesion: Session, origen_id: uuid.UUID, destino_id: uuid.UUID, distancia_km: float
 ) -> None:
@@ -25,7 +24,6 @@ def guardar_ruta(
     sesion.execute(sentencia)
 
 
-# Cantidad total de rutas
 def contar_rutas(sesion: Session) -> int:
     consulta = select(func.count()).select_from(Ruta)
     return sesion.execute(consulta).scalar_one()

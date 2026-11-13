@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Tabla parametro_global: coeficientes del negocio
 class ParametroGlobal(Base):
     __tablename__ = "parametro_global"
 

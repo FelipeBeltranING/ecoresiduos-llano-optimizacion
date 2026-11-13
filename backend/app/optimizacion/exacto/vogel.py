@@ -16,15 +16,12 @@ def vogel(costos, oferta, demanda):
     asignacion : np.ndarray (m x n) -> matriz con las cantidades asignadas
     costo_total: float              -> costo total de la solución inicial
     """
-    # 1) Verificar / balancear usando la función anterior
     balanceado, oferta, demanda = verificar_balanceo(oferta, demanda)
 
     costos = np.array(costos, dtype=float)
 
-    # Si se agregó un destino ficticio, agregamos una columna de ceros
     if costos.shape[1] < len(demanda):
         costos = np.hstack([costos, np.zeros((costos.shape[0], 1))])
-    # Si se agregó un origen ficticio, agregamos una fila de ceros
     if costos.shape[0] < len(oferta):
         costos = np.vstack([costos, np.zeros((1, costos.shape[1]))])
 
@@ -36,9 +33,7 @@ def vogel(costos, oferta, demanda):
     filas_activas = list(range(m))
     columnas_activas = list(range(n))
 
-    # 2) Iterar hasta agotar ofertas y demandas
     while filas_activas and columnas_activas:
-        # Calcular penalizaciones por fila (solo columnas activas)
         pen_filas = []
         for i in filas_activas:
             valores = sorted(costos[i, columnas_activas])
@@ -47,7 +42,6 @@ def vogel(costos, oferta, demanda):
             else:
                 pen_filas.append((0.0, i))
 
-        # Calcular penalizaciones por columna (solo filas activas)
         pen_cols = []
         for j in columnas_activas:
             valores = sorted(costos[filas_activas, j])
@@ -56,26 +50,21 @@ def vogel(costos, oferta, demanda):
             else:
                 pen_cols.append((0.0, j))
 
-        # Elegir la mayor penalización (empate -> primera encontrada)
         max_pen_fila = max(pen_filas, key=lambda x: x[0])
         max_pen_col = max(pen_cols, key=lambda x: x[0])
 
         if max_pen_fila[0] >= max_pen_col[0]:
             i = max_pen_fila[1]
-            # Celda de menor costo en esa fila (entre columnas activas)
             j = min(columnas_activas, key=lambda c: costos[i, c])
         else:
             j = max_pen_col[1]
-            # Celda de menor costo en esa columna (entre filas activas)
             i = min(filas_activas, key=lambda f: costos[f, j])
 
-        # Asignar la mayor cantidad posible
         cantidad = min(oferta[i], demanda[j])
         asignacion[i, j] = cantidad
         oferta[i] -= cantidad
         demanda[j] -= cantidad
 
-        # Eliminar fila o columna agotada
         if np.isclose(oferta[i], 0):
             filas_activas.remove(i)
         if np.isclose(demanda[j], 0):
@@ -90,11 +79,7 @@ def vogel(costos, oferta, demanda):
     return asignacion, costo_total
 
 
-# =========================================================
-# Ejemplo de uso
-# =========================================================
 if __name__ == "__main__":
-    # Matriz de costos (3 orígenes x 4 destinos)
     costos = [
         [19, 30, 50, 10],
         [70, 30, 40, 60],

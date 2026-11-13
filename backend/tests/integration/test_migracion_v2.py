@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 TABLAS_V2 = {"ejecucion", "flujo_resultado", "sensibilidad_resultado", "convergencia_ag"}
 
 
-# Tablas de la migración V2 con RLS activado
 def test_tablas_v2_con_rls(sesion_pruebas: Session) -> None:
     consulta = text(
         "SELECT relname, relrowsecurity FROM pg_class "

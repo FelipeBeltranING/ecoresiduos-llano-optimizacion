@@ -15,7 +15,6 @@ from app.db.models import (
 from app.optimizacion.red import CODIGO_PLANTA_FICTICIA
 
 
-# Mapas de código a id para nodos y rutas
 def mapa_ids_nodos(sesion: Session) -> dict[str, uuid.UUID]:
     ids = {}
     for codigo, nodo_id in sesion.execute(select(Nodo.codigo, Nodo.id)):
@@ -37,7 +36,6 @@ def mapa_ids_rutas(sesion: Session) -> dict[tuple[str, str], uuid.UUID]:
     return ids
 
 
-# Registro de la ejecución
 def crear_ejecucion(
     sesion: Session,
     metodo: Metodo,
@@ -64,7 +62,6 @@ def crear_ejecucion(
     return ejecucion
 
 
-# Registro de un flujo (destino nulo = planta ficticia)
 def agregar_flujo(
     sesion: Session,
     ejecucion_id: uuid.UUID,
@@ -83,7 +80,6 @@ def agregar_flujo(
     sesion.add(flujo)
 
 
-# Registro de un dual, holgura o costo reducido
 def agregar_sensibilidad(
     sesion: Session,
     ejecucion_id: uuid.UUID,
@@ -98,7 +94,6 @@ def agregar_sensibilidad(
     sesion.add(registro)
 
 
-# Registro de una generación del AG
 def agregar_convergencia(
     sesion: Session,
     ejecucion_id: uuid.UUID,
@@ -115,7 +110,6 @@ def agregar_convergencia(
     sesion.add(registro)
 
 
-# Consultas del detalle de una ejecución
 def buscar_ejecucion(sesion: Session, ejecucion_id: uuid.UUID) -> Ejecucion | None:
     return sesion.get(Ejecucion, ejecucion_id)
 

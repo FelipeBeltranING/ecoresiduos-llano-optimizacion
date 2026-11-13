@@ -60,7 +60,7 @@ function useInvalidarRed() {
     );
 }
 
-// ---------- Red ----------
+
 
 export const useNodos = () =>
   useQuery({ queryKey: claves.nodos, queryFn: () => get<Nodo[]>("/nodos") });
@@ -147,7 +147,7 @@ export function useImportarRed() {
   });
 }
 
-// ---------- Ejecuciones ----------
+
 
 export interface FiltrosEjecuciones {
   metodo?: Metodo;
@@ -212,7 +212,7 @@ export function useCalcularRangos() {
   });
 }
 
-// ---------- Criticidad estructural (ICE, HU-20) ----------
+
 
 export const useCriticidad = (alfa: number, beta: number, gamma: number) =>
   useQuery({
@@ -221,7 +221,7 @@ export const useCriticidad = (alfa: number, beta: number, gamma: number) =>
     placeholderData: (anterior) => anterior,
   });
 
-// ---------- Sensibilidad ----------
+
 
 export const useTornado = (porcentaje: number) =>
   useQuery({
@@ -262,7 +262,7 @@ export function useEjecutarEscenario() {
   });
 }
 
-// ---------- Análisis comparativo y de escalabilidad ----------
+
 
 export const useListaAnalisis = (tipo?: string) =>
   useQuery({
@@ -291,7 +291,7 @@ export function useIniciarAnalisis() {
   });
 }
 
-// ---------- Descargas ----------
+
 
 export function urlReporte(
   recurso: "ejecuciones" | "analisis",

@@ -12,7 +12,6 @@ router = APIRouter(prefix="/criticidad", tags=["criticidad"])
 Peso = Annotated[float, Query(ge=0, le=1)]
 
 
-# Índice de Criticidad Estructural de plantas y acopios (HU-20)
 @router.get("", response_model=CriticidadSalida)
 def calcular(
     sesion: SesionDB, alfa: Peso = 0.5, beta: Peso = 0.3, gamma: Peso = 0.2

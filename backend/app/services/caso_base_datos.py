@@ -1,4 +1,3 @@
-# Empresas agropecuarias del caso base del Meta
 EMPRESAS = [
     {
         "codigo": "E01",
@@ -92,7 +91,6 @@ EMPRESAS = [
     },
 ]
 
-# Plantas de procesamiento del caso base
 PLANTAS = [
     {
         "codigo": "P01",
@@ -132,7 +130,6 @@ PLANTAS = [
     },
 ]
 
-# Distancias en km: por cada empresa, la distancia a P01, P02, P03 y P04
 DISTANCIAS_KM = {
     "E01": [110, 98, 290, 300],
     "E02": [85, 98, 225, 105],
@@ -148,8 +145,6 @@ DISTANCIAS_KM = {
 
 ORDEN_PLANTAS = ["P01", "P02", "P03", "P04"]
 
-# Centros de acopio del caso con nodos de paso (HU-17): Puerto López y San Martín, sobre las vías
-# hacia Puerto Gaitán y Granada (coordenadas de la cabecera municipal, DIVIPOLA)
 ACOPIOS = [
     {
         "codigo": "A01",
@@ -171,5 +166,4 @@ ACOPIOS = [
     },
 ]
 
-# Flete consolidado acopio → planta en COP/t·km (tractomula), frente a 350 del flete directo
 COSTO_KM_CONSOLIDADO = 200

@@ -12,7 +12,6 @@ depends_on: str | Sequence[str] | None = None
 TABLAS_V3 = ["escenario", "analisis"]
 
 
-# Escenarios de sensibilidad (HU-11) y análisis comparativos y de escalabilidad (HU-13, HU-14)
 def upgrade() -> None:
     op.create_table(
         "escenario",
@@ -66,12 +65,10 @@ def upgrade() -> None:
     op.add_column("ejecucion", sa.Column("violaciones", sa.Numeric(18, 6), nullable=True))
     op.create_index("ix_ejecucion_creado_en", "ejecucion", ["creado_en"])
 
-    # Seguridad a nivel de fila: cierra la API REST de Supabase
     for tabla in TABLAS_V3:
         op.execute(f"ALTER TABLE {tabla} ENABLE ROW LEVEL SECURITY")
 
 
-# Reversión de la migración
 def downgrade() -> None:
     op.drop_index("ix_ejecucion_creado_en", table_name="ejecucion")
     op.drop_column("ejecucion", "violaciones")

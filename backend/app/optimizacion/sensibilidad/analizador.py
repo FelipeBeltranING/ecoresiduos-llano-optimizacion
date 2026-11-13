@@ -11,7 +11,6 @@ from app.optimizacion.red import RedLogistica, ValidadorRed, copiar_red, prepara
 TOLERANCIA_FLUJO = 1e-6
 TOLERANCIA_DUAL = 1e-4
 ITERACIONES_BISECCION = 14
-# Por encima de este tamaño los rangos tardarían demasiado y se omiten
 MAX_VARIABLES_RANGOS = 600
 
 COSTO_TRANSPORTE = "COSTO_TRANSPORTE"
@@ -22,7 +21,6 @@ CERRAR_RUTA = "CERRAR_RUTA"
 TIPOS_AJUSTE = (COSTO_TRANSPORTE, OFERTA, CAPACIDAD, COSTO_RUTA, CERRAR_RUTA)
 
 
-# Un ajuste de escenario: porcentaje aplicado a un parámetro (objetivo vacío = todos)
 @dataclass
 class Ajuste:
     tipo: str
@@ -30,19 +28,16 @@ class Ajuste:
     objetivo: str | None = None
 
 
-# Solución rápida con HiGHS (en proceso, sin CBC) para la re-optimización paramétrica
 @dataclass
 class SolucionLP:
     costo: float
     flujos: np.ndarray
     duales_oferta: np.ndarray
     duales_capacidad: np.ndarray
-    # Flujos por camino y duales de todos los recursos (plantas y luego acopios)
     flujos_caminos: np.ndarray | None = None
     duales_recursos: np.ndarray | None = None
 
 
-# Con acopios se resuelve por caminos; los flujos se devuelven por planta final (m x n)
 def resolver_lp(red: RedLogistica) -> SolucionLP | None:
     m, n = red.numero_empresas(), red.numero_plantas()
     caminos = construir_caminos(red)
@@ -97,7 +92,6 @@ def _ruta(red: RedLogistica, objetivo: str | None) -> tuple[int, int]:
     return _filas(red, origen)[0], _columnas(red, destino)[0]
 
 
-# Aplica los ajustes de un escenario sobre una copia de la red (sin planta ficticia)
 def aplicar_ajustes(red: RedLogistica, ajustes: list[Ajuste]) -> RedLogistica:
     nueva = copiar_red(red)
     for ajuste in ajustes:
@@ -120,7 +114,6 @@ def aplicar_ajustes(red: RedLogistica, ajustes: list[Ajuste]) -> RedLogistica:
             for i in _filas(nueva, ajuste.objetivo):
                 nueva.oferta[i] = max(0.0, nueva.oferta[i] * factor)
         elif ajuste.tipo == CAPACIDAD and ajuste.objetivo in nueva.codigos_acopios:
-            # Cuello de botella o cierre de un centro de acopio (HU-17)
             t = nueva.codigos_acopios.index(ajuste.objetivo)
             nueva.capacidad_acopios[t] = max(0.0, nueva.capacidad_acopios[t] * factor)
         elif ajuste.tipo == CAPACIDAD:
@@ -138,13 +131,11 @@ def aplicar_ajustes(red: RedLogistica, ajustes: list[Ajuste]) -> RedLogistica:
     return nueva
 
 
-# Red lista para resolver: agrega la planta ficticia si el escenario la necesita
 def balancear(red: RedLogistica, penalizacion: float) -> RedLogistica:
     validacion = ValidadorRed(penalizacion).validar(red)
     return preparar_red_para_motor(red, validacion)
 
 
-# ---------- Rangos de estabilidad (re-optimización paramétrica) ----------
 
 
 def _soporte(flujos: np.ndarray) -> np.ndarray:
@@ -274,7 +265,6 @@ def calcular_rangos(red: RedLogistica) -> RangosEstabilidad:
     return RangosEstabilidad(costos, capacidades, ofertas)
 
 
-# Impacto en Z de variar cada parámetro ±porcentaje (gráfica de tornado)
 @dataclass
 class ImpactoTornado:
     parametro: str

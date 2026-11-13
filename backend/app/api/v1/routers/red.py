@@ -7,7 +7,6 @@ from app.services import ejecucion_service
 router = APIRouter(prefix="/red", tags=["red"])
 
 
-# Validación del balance y de la consistencia de la red (HU-06)
 @router.get("/validacion", response_model=ValidacionRedRespuesta)
 def validar_red(sesion: SesionDB) -> ValidacionRedRespuesta:
     resultado = ejecucion_service.validar_red(sesion)

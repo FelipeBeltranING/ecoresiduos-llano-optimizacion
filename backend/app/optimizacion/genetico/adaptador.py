@@ -13,14 +13,12 @@ from app.optimizacion.genetico.algoritmo import (
 from app.optimizacion.red import RedLogistica
 
 
-# Ejecuta el AG del equipo sobre una RedLogistica y devuelve el contrato ResultadoGenetico
 def ejecutar(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGenetico:
     inicio = time.perf_counter()
     semilla = parametros.semilla
     habilitadas = red.rutas_habilitadas
     costos, capacidad, recursos = red.costos, red.capacidad, None
     if red.tiene_acopios():
-        # Cromosoma empresa × camino (directo o pasando por un acopio), HU-17
         caminos = construir_caminos(red)
         costos, habilitadas = caminos.costos, caminos.habilitadas
         capacidad, recursos = caminos.capacidad_recursos, caminos.recursos
@@ -29,7 +27,6 @@ def ejecutar(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGenetico:
     evaluador = EvaluadorAG(
         red.oferta, capacidad, costos, parametros.lambda_pen, habilitadas, recursos
     )
-    # Semilla distinta para los operadores, pero derivada de la misma (reproducible)
     semilla_operadores = None if semilla is None else semilla + 1
     operadores = OperadoresGeneticos(semilla_operadores, habilitadas)
 

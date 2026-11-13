@@ -29,7 +29,6 @@ def analizar_sensibilidad_costos(
     Returns:
         Dict[str, Any]: Resultados del impacto de las variaciones en el costo total.
     """
-    # 1. Resolver el problema base
     res_base = linprog(c=c, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
     
     if not res_base.success:
@@ -43,7 +42,6 @@ def analizar_sensibilidad_costos(
         "variaciones_evaluadas": []
     }
 
-    # 2. Variar individualmente el costo de cada ruta (arco)
     factores = np.linspace(1 - rango_variacion, 1 + rango_variacion, pasos)
 
     for i, c_i_original in enumerate(c):

@@ -27,7 +27,6 @@ def test_combustible_solo_escala_el_transporte() -> None:
 
     nueva = aplicar_ajustes(red, [Ajuste(COSTO_TRANSPORTE, 10)])
 
-    # c = k*d + o -> c' = 1,1*k*d + o; en E01->P01: 350*110*1,1 + 45000
     assert nueva.costos[0, 0] == pytest.approx(350 * 110 * 1.1 + 45000)
     assert red.costos[0, 0] == pytest.approx(350 * 110 + 45000)
 
@@ -64,7 +63,6 @@ def test_rangos_contienen_el_valor_actual() -> None:
     for rango in list(rangos.capacidades.values()) + list(rangos.costos.values()):
         assert rango.inferior is None or rango.inferior <= rango.valor + 1e-6
         assert rango.superior is None or rango.superior >= rango.valor - 1e-6
-    # Una ruta sin flujo puede encarecerse sin límite
     flujos = resolver_lp(red).flujos
     i, j = np.argwhere(flujos < 1e-9)[0]
     assert rangos.costos[(i, j)].superior is None

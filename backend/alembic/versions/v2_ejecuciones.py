@@ -12,7 +12,6 @@ depends_on: str | Sequence[str] | None = None
 TABLAS_V2 = ["ejecucion", "flujo_resultado", "sensibilidad_resultado", "convergencia_ag"]
 
 
-# Tablas de ejecuciones y resultados de los motores
 def upgrade() -> None:
     metodo = postgresql.ENUM("EXACTO", "GENETICO", name="metodo")
 
@@ -110,12 +109,10 @@ def upgrade() -> None:
         sa.CheckConstraint("generacion >= 0", name="ck_convergencia_generacion_no_negativa"),
     )
 
-    # Seguridad a nivel de fila: cierra la API REST de Supabase
     for tabla in TABLAS_V2:
         op.execute(f"ALTER TABLE {tabla} ENABLE ROW LEVEL SECURITY")
 
 
-# Reversión de la migración
 def downgrade() -> None:
     op.drop_table("convergencia_ag")
     op.drop_index("ix_sensibilidad_resultado_ejecucion_id", table_name="sensibilidad_resultado")

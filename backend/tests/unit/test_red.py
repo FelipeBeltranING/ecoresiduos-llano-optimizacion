@@ -14,7 +14,6 @@ from tests.utilidades import PENALIZACION_FICTICIA, construir_red_caso_base
 validador = ValidadorRed(penalizacion_ficticia=PENALIZACION_FICTICIA)
 
 
-# Tamaño y totales del caso base
 def test_red_caso_base_tiene_10_empresas_y_4_plantas() -> None:
     red = construir_red_caso_base()
 
@@ -24,7 +23,6 @@ def test_red_caso_base_tiene_10_empresas_y_4_plantas() -> None:
     assert red.rutas_habilitadas.all()
 
 
-# Validación del caso base: holgura de 60 t y sin planta ficticia
 def test_validacion_caso_base() -> None:
     resultado = validador.validar(construir_red_caso_base())
 
@@ -37,14 +35,12 @@ def test_validacion_caso_base() -> None:
     assert resultado.es_valida() is True
 
 
-# Costo unitario c(E04, P04) = 350 * 185 + 40000
 def test_costo_e04_p04() -> None:
     red = construir_red_caso_base()
 
     assert red.costo("E04", "P04") == 104_750
 
 
-# Una ruta con costo por km propio usa ese costo en vez del global
 def test_ruta_con_costo_km_propio() -> None:
     empresas = [DatosEmpresa(codigo="E01", oferta=10)]
     plantas = [DatosPlanta(codigo="P01", capacidad=20, costo_operacion=1000)]
@@ -57,7 +53,6 @@ def test_ruta_con_costo_km_propio() -> None:
     assert red.costo("E01", "P01") == 500 * 10 + 1000
 
 
-# Con la oferta +10 % (979 t) hace falta una planta ficticia de 29 t
 def test_oferta_mayor_que_capacidad_pide_planta_ficticia() -> None:
     red = construir_red_caso_base(factor_oferta=1.1)
 
@@ -69,7 +64,6 @@ def test_oferta_mayor_que_capacidad_pide_planta_ficticia() -> None:
     assert resultado.costo_ficticia == PENALIZACION_FICTICIA
 
 
-# La red para el motor incluye la planta ficticia con costo M
 def test_preparar_red_agrega_planta_ficticia() -> None:
     red = construir_red_caso_base(factor_oferta=1.1)
     resultado = validador.validar(red)
@@ -82,7 +76,6 @@ def test_preparar_red_agrega_planta_ficticia() -> None:
     assert red_motor.capacidad.sum() == pytest.approx(red_motor.oferta.sum())
 
 
-# Sin exceso de oferta la red para el motor no cambia
 def test_preparar_red_sin_ficticia() -> None:
     red = construir_red_caso_base()
     resultado = validador.validar(red)
@@ -90,7 +83,6 @@ def test_preparar_red_sin_ficticia() -> None:
     assert preparar_red_para_motor(red, resultado) is red
 
 
-# Una empresa sin rutas habilitadas es un nodo aislado
 def test_detecta_nodo_aislado() -> None:
     empresas = [DatosEmpresa(codigo="E01", oferta=10), DatosEmpresa(codigo="E02", oferta=5)]
     plantas = [DatosPlanta(codigo="P01", capacidad=20, costo_operacion=0)]
@@ -106,7 +98,6 @@ def test_detecta_nodo_aislado() -> None:
     assert "Nodo aislado" in resultado.mensajes[-1]
 
 
-# Una ruta sin distancia no queda habilitada
 def test_ruta_sin_distancia_no_se_habilita() -> None:
     empresas = [DatosEmpresa(codigo="E01", oferta=10)]
     plantas = [DatosPlanta(codigo="P01", capacidad=20, costo_operacion=0)]

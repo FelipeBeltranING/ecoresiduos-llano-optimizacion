@@ -10,13 +10,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Métodos de optimización
 class Metodo(enum.StrEnum):
     EXACTO = "EXACTO"
     GENETICO = "GENETICO"
 
 
-# Tabla ejecucion: cada corrida del modelo exacto o del AG
 class Ejecucion(Base):
     __tablename__ = "ejecucion"
 

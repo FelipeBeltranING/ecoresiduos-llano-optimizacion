@@ -14,7 +14,6 @@ ESTADO_TERMINADO = "Terminado"
 ESTADO_ERROR = "Error"
 
 
-# Tabla analisis: reportes comparativos y de escalabilidad (HU-13, HU-14)
 class Analisis(Base):
     __tablename__ = "analisis"
 

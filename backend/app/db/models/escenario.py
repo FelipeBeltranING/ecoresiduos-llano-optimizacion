@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Tabla escenario: ajustes de sensibilidad sobre la red base (HU-11)
 class Escenario(Base):
     __tablename__ = "escenario"
 

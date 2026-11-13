@@ -17,7 +17,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 
-# Tabla ruta: arcos dirigidos entre dos nodos
 class Ruta(Base):
     __tablename__ = "ruta"
     __table_args__ = (
@@ -38,7 +37,6 @@ class Ruta(Base):
     distancia_km: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
     costo_km_t: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     habilitada: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
-    # Polilínea codificada del trazado vial (OSRM) y origen de la distancia
     geometria: Mapped[str | None] = mapped_column(Text, nullable=True)
     duracion_min: Mapped[Decimal | None] = mapped_column(Numeric(8, 1), nullable=True)
     fuente_distancia: Mapped[str | None] = mapped_column(String(12), nullable=True)

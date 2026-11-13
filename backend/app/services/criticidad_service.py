@@ -16,7 +16,6 @@ REFERENCIA = (
 )
 
 
-# ICE de las plantas y acopios de la red activa, con su impacto al fallar (HU-20)
 def analizar(sesion: Session, alfa: float, beta: float, gamma: float) -> CriticidadSalida:
     constructor = RedBuilder(sesion)
     red = constructor.construir()

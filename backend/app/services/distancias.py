@@ -1,11 +1,9 @@
 import math
 
 RADIO_TIERRA_KM = 6371.0
-# Factor de tortuosidad vial: la carretera es más larga que la línea recta
 FACTOR_TORTUOSIDAD = 1.3
 
 
-# Distancia en línea recta entre dos coordenadas (fórmula de Haversine)
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     fi1 = math.radians(lat1)
     fi2 = math.radians(lat2)
@@ -18,7 +16,6 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * RADIO_TIERRA_KM * math.asin(math.sqrt(a))
 
 
-# Distancia vial estimada cuando no hay una distancia medida por carretera
 def distancia_vial_estimada(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return round(max(1.0, haversine_km(lat1, lon1, lat2, lon2) * FACTOR_TORTUOSIDAD), 1)
 
@@ -29,7 +26,6 @@ FUENTE_MANUAL = "MANUAL"
 DISTANCIA_MINIMA_KM = 5.0
 
 
-# Ruta vial real con OSRM sobre OpenStreetMap; None si el servicio no responde
 def ruta_osrm(lat1: float, lon1: float, lat2: float, lon2: float) -> dict | None:
     import json
     import urllib.request
@@ -58,7 +54,6 @@ def ruta_osrm(lat1: float, lon1: float, lat2: float, lon2: float) -> dict | None
     }
 
 
-# Distancia vial de una ruta nueva: OSRM si está disponible, si no Haversine x 1,3
 def medir_ruta(lat1: float, lon1: float, lat2: float, lon2: float) -> dict:
     real = ruta_osrm(lat1, lon1, lat2, lon2)
     if real is not None:

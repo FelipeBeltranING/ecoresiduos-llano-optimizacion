@@ -2,7 +2,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 
-# Tablas creadas por la migración V1
 def test_existen_las_tablas_de_la_red(sesion_pruebas: Session) -> None:
     consulta = text(
         "SELECT tablename FROM pg_tables "
@@ -15,7 +14,6 @@ def test_existen_las_tablas_de_la_red(sesion_pruebas: Session) -> None:
     assert tablas == {"nodo", "ruta", "parametro_global"}
 
 
-# RLS activado en las tres tablas
 def test_rls_activado(sesion_pruebas: Session) -> None:
     consulta = text(
         "SELECT relname, relrowsecurity FROM pg_class "
@@ -25,7 +23,6 @@ def test_rls_activado(sesion_pruebas: Session) -> None:
         assert fila.relrowsecurity is True, fila.relname
 
 
-# Parámetros semilla
 def test_parametros_semilla(sesion_pruebas: Session) -> None:
     consulta = text("SELECT clave, valor FROM parametro_global")
     parametros = {}

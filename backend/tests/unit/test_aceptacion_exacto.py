@@ -8,7 +8,6 @@ from tests.utilidades import PENALIZACION_FICTICIA, Z_OPTIMO_CASO_BASE, construi
 TOLERANCIA = 1e-6
 
 
-# Resolución del caso base con la red preparada para el motor
 def resolver_caso_base(factor_oferta: float = 1.0):
     red = construir_red_caso_base(factor_oferta)
     validacion = ValidadorRed(PENALIZACION_FICTICIA).validar(red)

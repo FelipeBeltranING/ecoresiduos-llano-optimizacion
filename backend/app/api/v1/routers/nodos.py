@@ -9,7 +9,6 @@ from app.services.gestion_service import ConflictoError, NoEncontradoError
 router = APIRouter(prefix="/nodos", tags=["nodos"])
 
 
-# Empresas, plantas y centros de acopio (HU-01, HU-02, HU-17)
 @router.get("", response_model=list[NodoSalida])
 def listar(
     sesion: SesionDB, tipo: TipoNodo | None = None, incluir_inactivos: bool = True
@@ -43,7 +42,6 @@ def actualizar(codigo: str, cambios: NodoActualizacion, sesion: SesionDB) -> Nod
         raise HTTPException(status.HTTP_409_CONFLICT, detail=str(error)) from error
 
 
-# Desactivación lógica: el nodo deja de participar en la red pero queda en el historial
 @router.delete("/{codigo}", response_model=NodoSalida)
 def desactivar(codigo: str, sesion: SesionDB) -> NodoSalida:
     try:

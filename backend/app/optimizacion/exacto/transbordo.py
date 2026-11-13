@@ -28,7 +28,6 @@ ESTADO_OPTIMO = "Óptimo"
 ESTADO_INFACTIBLE = "Infactible"
 
 
-# Problema de transporte expandido con acopios
 @dataclass
 class ModeloExpandido:
     costos: np.ndarray
@@ -38,7 +37,6 @@ class ModeloExpandido:
     fila_holgura: int | None
 
 
-# Expansión de la red a una matriz de transporte balanceada
 def expandir(red: RedLogistica) -> ModeloExpandido | None:
     m = red.numero_empresas()
     n = red.numero_plantas()
@@ -69,7 +67,6 @@ def expandir(red: RedLogistica) -> ModeloExpandido | None:
     elif holgura < -TOLERANCIA:
         return None
     elif holgura < 0:
-        # Solo ruido numérico: una columna de costo cero absorbe el excedente
         columna_ajuste = columnas
         columnas += 1
 
@@ -115,7 +112,6 @@ def expandir(red: RedLogistica) -> ModeloExpandido | None:
     )
 
 
-# Flujo máximo empresa/acopio -> planta/acopio (Edmonds-Karp)
 def _flujo_factible(modelo: ModeloExpandido) -> np.ndarray | None:
     costos = modelo.costos
     m, n = costos.shape
@@ -176,7 +172,6 @@ def _flujo_factible(modelo: ModeloExpandido) -> np.ndarray | None:
     return solucion
 
 
-# Busca un ciclo simple en el soporte positivo de la solución
 def _buscar_ciclo(x: np.ndarray, m: int, n: int) -> list[int] | None:
     adyacencia = [[] for _ in range(m + n)]
     for i in range(m):
@@ -216,7 +211,6 @@ def _buscar_ciclo(x: np.ndarray, m: int, n: int) -> list[int] | None:
     return None
 
 
-# Elimina los ciclos del soporte positivo empujando flujo por cada ciclo
 def _reducir_a_forest(x: np.ndarray, m: int, n: int) -> np.ndarray:
     x = x.copy()
     while True:
@@ -236,7 +230,6 @@ def _reducir_a_forest(x: np.ndarray, m: int, n: int) -> np.ndarray:
                 x[i, j] = 0.0
 
 
-# Completa el bosque con celdas permitidas de flujo cero hasta tener una base
 def _extender_a_arbol(x: np.ndarray, costos: np.ndarray) -> set[tuple[int, int]]:
     m, n = x.shape
     basicas = {(i, j) for i in range(m) for j in range(n) if x[i, j] > TOLERANCIA}
@@ -270,7 +263,6 @@ def _extender_a_arbol(x: np.ndarray, costos: np.ndarray) -> set[tuple[int, int]]
     return basicas
 
 
-# Potenciales u (filas) y v (columnas) de una base de transporte
 def _potenciales(
     basicas: set[tuple[int, int]], costos: np.ndarray, m: int, n: int
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -301,7 +293,6 @@ def _potenciales(
     return u, v
 
 
-# Componentes de la base y oferta total de cada una
 def _componentes(
     basicas: set[tuple[int, int]], oferta: np.ndarray, m: int, n: int
 ) -> tuple[list[int], list[float]]:
@@ -331,7 +322,6 @@ def _componentes(
     return componente, totales
 
 
-# Camino en el árbol de la base entre una fila y una columna
 def _camino(
     basicas: set[tuple[int, int]], m: int, n: int, fila: int, columna: int
 ) -> list[int] | None:
@@ -364,7 +354,6 @@ def _camino(
     return camino
 
 
-# Resuelve el transporte expandido: flujo inicial factible + MODI
 def _resolver_expandido(
     modelo: ModeloExpandido,
 ) -> tuple[np.ndarray, set[tuple[int, int]]] | None:
@@ -436,7 +425,6 @@ def _resolver_expandido(
     return None
 
 
-# Costo óptimo de una red, usado para los precios sombra por diferencias finitas
 def _costo_optimo(red: RedLogistica) -> float | None:
     modelo = expandir(red)
     if modelo is None:
@@ -448,7 +436,6 @@ def _costo_optimo(red: RedLogistica) -> float | None:
     return float((x * modelo.costos).sum())
 
 
-# Precios sombra de capacidad de plantas (re-optimizando con una tonelada más)
 def _duales_capacidad(red: RedLogistica, holguras: np.ndarray, costo_base: float) -> np.ndarray:
     duales = np.zeros(red.numero_plantas())
     for j in range(red.numero_plantas()):
@@ -463,7 +450,6 @@ def _duales_capacidad(red: RedLogistica, holguras: np.ndarray, costo_base: float
     return duales
 
 
-# Precios sombra de capacidad de acopios (re-optimizando con una tonelada más)
 def _duales_acopio(red: RedLogistica, holguras: np.ndarray, costo_base: float) -> np.ndarray:
     duales = np.zeros(red.numero_acopios())
     for k in range(red.numero_acopios()):
@@ -480,7 +466,6 @@ def _duales_acopio(red: RedLogistica, holguras: np.ndarray, costo_base: float) -
     return duales
 
 
-# Precios sombra de la oferta a partir de los potenciales del óptimo
 def _duales_oferta(modelo: ModeloExpandido, basicas: set[tuple[int, int]]) -> np.ndarray:
     filas, columnas = modelo.costos.shape
     m = filas - len(modelo.acopios_activos)
@@ -492,7 +477,6 @@ def _duales_oferta(modelo: ModeloExpandido, basicas: set[tuple[int, int]]) -> np
     return u[:m].copy()
 
 
-# Costos reducidos de las rutas directas a partir de los potenciales del óptimo
 def _costos_reducidos(
     red: RedLogistica,
     modelo: ModeloExpandido,
@@ -511,7 +495,6 @@ def _costos_reducidos(
     return reducidos
 
 
-# Resultado del modelo exacto con la misma estructura de diccionario de siempre
 class ModeloTransbordo:
     def __init__(self, red: RedLogistica) -> None:
         self.red = red

@@ -17,19 +17,16 @@ from app.optimizacion.contratos import (
 from app.optimizacion.red import RedLogistica
 
 
-# Base con el caso base cargado
 @pytest.fixture
 def cliente_con_caso_base(cliente_pruebas: TestClient) -> TestClient:
     cliente_pruebas.post("/api/v1/datos/caso-base")
     return cliente_pruebas
 
 
-# Cantidad de ejecuciones guardadas
 def contar_ejecuciones(sesion: Session) -> int:
     return sesion.execute(text("SELECT count(*) FROM ejecucion")).scalar_one()
 
 
-# Flujos de prueba: toda la oferta de cada empresa va a la primera planta
 def flujos_de_prueba(red: RedLogistica) -> np.ndarray:
     flujos = np.zeros(red.costos.shape)
     for i in range(red.numero_empresas()):
@@ -37,7 +34,6 @@ def flujos_de_prueba(red: RedLogistica) -> np.ndarray:
     return flujos
 
 
-# Motores falsos que reemplazan a los reales solo en estas pruebas
 def exacto_falso(red: RedLogistica) -> ResultadoExacto:
     m = red.numero_empresas()
     n = red.numero_plantas()
@@ -70,7 +66,6 @@ def genetico_falso(red: RedLogistica, parametros: ParametrosAG) -> ResultadoGene
     )
 
 
-# Validación de la red del caso base
 def test_validacion_de_la_red(cliente_con_caso_base: TestClient) -> None:
     respuesta = cliente_con_caso_base.get("/api/v1/red/validacion")
 
@@ -81,7 +76,6 @@ def test_validacion_de_la_red(cliente_con_caso_base: TestClient) -> None:
     assert cuerpo["necesita_planta_ficticia"] is False
 
 
-# El modelo exacto real resuelve el caso base y guarda la ejecución
 def test_exacto_real_resuelve_el_caso_base(
     cliente_con_caso_base: TestClient, sesion_pruebas: Session
 ) -> None:
@@ -112,14 +106,12 @@ def test_genetico_real_guarda_convergencia(
     assert contar_ejecuciones(sesion_pruebas) == antes + 1
 
 
-# Ejecución inexistente
 def test_ejecucion_inexistente_da_404(cliente_pruebas: TestClient) -> None:
     respuesta = cliente_pruebas.get(f"/api/v1/ejecuciones/{uuid.uuid4()}")
 
     assert respuesta.status_code == 404
 
 
-# Con un motor conectado, la ejecución del exacto queda guardada con flujos y sensibilidad
 def test_guarda_resultado_del_exacto(
     cliente_con_caso_base: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -147,7 +139,6 @@ def test_guarda_resultado_del_exacto(
     }
 
 
-# Con un motor conectado, la ejecución del AG guarda parámetros y convergencia
 def test_guarda_resultado_del_genetico(
     cliente_con_caso_base: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

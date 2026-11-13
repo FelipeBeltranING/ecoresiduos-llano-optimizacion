@@ -14,7 +14,6 @@ from app.optimizacion.red import (
 from app.repositories import parametro_repository
 
 
-# Armado de la RedLogistica a partir de la base de datos
 class RedBuilder:
     def __init__(self, sesion: Session) -> None:
         self.sesion = sesion
@@ -53,7 +52,6 @@ class RedBuilder:
             )
         return plantas
 
-    # Centros de acopio activos (HU-17); desactivarlos equivale a "no usar acopios"
     def leer_acopios(self) -> list[DatosAcopio]:
         consulta = (
             select(Nodo)

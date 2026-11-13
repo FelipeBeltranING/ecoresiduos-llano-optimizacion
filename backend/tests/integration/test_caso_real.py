@@ -4,7 +4,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-# Al terminar se vuelve a dejar activo el caso base para las demás pruebas
 @pytest.fixture
 def cliente(cliente_pruebas: TestClient) -> Iterator[TestClient]:
     yield cliente_pruebas

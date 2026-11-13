@@ -19,7 +19,6 @@ EMPRESA_PRUEBA = {
 }
 
 
-# Caso base cargado y limpieza de los nodos de prueba al terminar
 @pytest.fixture
 def cliente(cliente_pruebas: TestClient, motor_pruebas: Engine) -> Iterator[TestClient]:
     cliente_pruebas.post("/api/v1/datos/caso-base")

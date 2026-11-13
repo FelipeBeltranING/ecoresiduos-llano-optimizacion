@@ -40,7 +40,6 @@ def escribir_hoja(libro: Workbook, titulo: str, columnas: list[str], filas: list
         hoja.column_dimensions[columna[0].column_letter].width = min(ancho, 40)
 
 
-# Exportación de la red completa a Excel (HU-05)
 def exportar_red(sesion: Session) -> bytes:
     libro = Workbook()
     libro.remove(libro.active)
@@ -126,7 +125,6 @@ def mensaje_validacion(error: ValidationError) -> str:
     return "; ".join(partes)
 
 
-# Importación con validación por fila: si una fila falla, no se guarda nada (HU-05)
 def importar_red(sesion: Session, contenido: bytes) -> ResumenImportacion:
     try:
         libro = load_workbook(io.BytesIO(contenido), data_only=True)

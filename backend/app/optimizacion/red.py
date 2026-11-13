@@ -5,7 +5,6 @@ import numpy as np
 CODIGO_PLANTA_FICTICIA = "FICTICIA"
 
 
-# Datos de entrada para construir la red
 @dataclass
 class DatosEmpresa:
     codigo: str
@@ -19,7 +18,6 @@ class DatosPlanta:
     costo_operacion: float
 
 
-# Centro de acopio: nodo de paso con capacidad y costo de manejo por tonelada (HU-17)
 @dataclass
 class DatosAcopio:
     codigo: str
@@ -36,7 +34,6 @@ class DatosRuta:
     habilitada: bool
 
 
-# Red logística en forma de vectores y matrices
 @dataclass
 class RedLogistica:
     codigos_empresas: list[str]
@@ -45,12 +42,9 @@ class RedLogistica:
     capacidad: np.ndarray
     costos: np.ndarray
     rutas_habilitadas: np.ndarray
-    # Costo de operación por planta (o_j); permite separar el componente de transporte
     costo_operacion: np.ndarray | None = None
-    # Centros de acopio (HU-17): arcos empresa → acopio y acopio → planta
     codigos_acopios: list[str] = field(default_factory=list)
     capacidad_acopios: np.ndarray | None = None
-    # Costo de manejo por acopio (h_t); ya está sumado en costos_a_acopio
     costo_manejo: np.ndarray | None = None
     costos_a_acopio: np.ndarray | None = None
     rutas_a_acopio: np.ndarray | None = None
@@ -78,7 +72,6 @@ class RedLogistica:
         return CODIGO_PLANTA_FICTICIA in self.codigos_plantas
 
 
-# Costo unitario de una ruta: c_ij = k_ij * d_ij + o_j
 def calcular_costo_unitario(
     distancia_km: float, costo_km_ruta: float | None, costo_km_global: float, costo_operacion: float
 ) -> float:
@@ -88,7 +81,6 @@ def calcular_costo_unitario(
     return costo_km * distancia_km + costo_operacion
 
 
-# Construcción de la red a partir de los datos de empresas, plantas y rutas
 def construir_red(
     empresas: list[DatosEmpresa],
     plantas: list[DatosPlanta],
@@ -141,7 +133,6 @@ def construir_red(
     return red
 
 
-# Arcos empresa → acopio (transporte + manejo) y acopio → planta (transporte + operación)
 def agregar_acopios(
     red: RedLogistica, acopios: list[DatosAcopio], rutas: list[DatosRuta], costo_km_global: float
 ) -> None:
@@ -176,7 +167,6 @@ def agregar_acopios(
             red.rutas_desde_acopio[fila, columna] = True
 
 
-# Copia independiente de la red (los arreglos no se comparten)
 def copiar_red(red: RedLogistica) -> RedLogistica:
     cambios = {}
     for campo in fields(red):
@@ -188,7 +178,6 @@ def copiar_red(red: RedLogistica) -> RedLogistica:
     return replace(red, **cambios)
 
 
-# Red con una planta ficticia que recibe el residuo que no cabe en las plantas reales
 def agregar_planta_ficticia(
     red: RedLogistica, capacidad_ficticia: float, penalizacion: float
 ) -> RedLogistica:
@@ -202,7 +191,6 @@ def agregar_planta_ficticia(
     if red.costo_operacion is not None:
         nueva.costo_operacion = np.append(red.costo_operacion, penalizacion)
     if red.tiene_acopios():
-        # Los acopios no envían a la planta ficticia
         t = red.numero_acopios()
         nueva.costos_desde_acopio = np.hstack([red.costos_desde_acopio, np.zeros((t, 1))])
         nueva.rutas_desde_acopio = np.hstack(
@@ -211,7 +199,6 @@ def agregar_planta_ficticia(
     return nueva
 
 
-# Resultado de validar la red
 @dataclass
 class ResultadoValidacion:
     oferta_total: float
@@ -227,7 +214,6 @@ class ResultadoValidacion:
         return len(self.nodos_aislados) == 0
 
 
-# Validación del balance y de la consistencia de la red (HU-06)
 class ValidadorRed:
     def __init__(self, penalizacion_ficticia: float) -> None:
         self.penalizacion_ficticia = penalizacion_ficticia
@@ -240,7 +226,6 @@ class ValidadorRed:
                 aislados.append(codigo)
         return aislados
 
-    # ¿La empresa llega a alguna planta pasando por un acopio?
     def llega_por_acopio(self, red: RedLogistica, fila: int) -> bool:
         for acopio in range(red.numero_acopios()):
             if red.rutas_a_acopio[fila, acopio] and red.rutas_desde_acopio[acopio, :].any():
@@ -281,7 +266,6 @@ class ValidadorRed:
         return resultado
 
 
-# Red lista para los motores: agrega la planta ficticia solo si hace falta
 def preparar_red_para_motor(red: RedLogistica, validacion: ResultadoValidacion) -> RedLogistica:
     if not validacion.necesita_planta_ficticia:
         return red

@@ -5,7 +5,6 @@ from app.main import app
 cliente = TestClient(app)
 
 
-# Endpoint de salud
 def test_health_responde_200() -> None:
     respuesta = cliente.get("/api/v1/health")
 

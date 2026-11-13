@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { routes } from "@/router";
 
-// Leaflet necesita un navegador real; en jsdom se reemplaza el mapa por un marcador
+
 vi.mock("@/components/mapa/MapaReal", () => ({
   MapaReal: () => <div data-testid="mapa-real" />,
 }));

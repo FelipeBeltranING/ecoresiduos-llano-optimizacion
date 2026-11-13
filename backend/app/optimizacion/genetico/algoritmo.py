@@ -1,10 +1,7 @@
-# AlgoritmoGenetico
 
 import numpy as np
 
 
-# Capacidad por recursos (HU-17): sin acopios cada camino es una planta y usa solo ese recurso.
-# Con acopios, el camino empresa → acopio → planta consume cupo del acopio y de la planta.
 class Recursos:
     def __init__(self, n_caminos: int, recursos: np.ndarray = None):
         self.matriz = recursos
@@ -28,7 +25,6 @@ class Recursos:
 
 class Individuo:
     def __init__(self, flujos: np.ndarray):
-        # El cromosoma se almacena como matriz bidimensional m x n
         self.cromosoma = flujos
         self.fitness = 0.0
         self.costo_total = 0.0
@@ -66,7 +62,6 @@ class InicializadorAG:
         self.rng = np.random.default_rng(semilla)
 
     def generar_individuo_dirichlet(self) -> Individuo:
-        # Cromosoma aleatorio: reparte la oferta de cada empresa entre sus rutas habilitadas
         flujos = np.zeros((self.m, self.n))
         for i in range(self.m):
             columnas = np.flatnonzero(self.habilitadas[i])
@@ -75,7 +70,6 @@ class InicializadorAG:
         return Individuo(flujos)
 
     def generar_individuo_heuristico(self) -> Individuo:
-        # Cromosoma por heurística de costo mínimo, con un orden de empate aleatorio
         flujos = np.zeros((self.m, self.n))
         oferta_restante = np.copy(self.a)
         capacidad_restante = np.copy(self.b)
@@ -103,7 +97,6 @@ class InicializadorAG:
         return Individuo(flujos)
 
     def crear_poblacion_inicial(self, tam_poblacion: int = 100) -> list[Individuo]:
-        # Crea la población inicial con la proporción 90% aleatoria / 10% heurística.
         num_heuristico = max(1, int(tam_poblacion * 0.10))
         num_aleatorio = tam_poblacion - num_heuristico
 
@@ -135,16 +128,13 @@ class EvaluadorAG:
         if habilitadas is None:
             habilitadas = np.ones(matriz_costos.shape, dtype=bool)
         self.habilitadas = habilitadas
-        # Para cada empresa, sus plantas habilitadas de la más barata a la más cara
         costos = np.where(self.habilitadas, self.C, np.inf)
         self.orden_por_costo = np.argsort(costos, axis=1)
 
     def reparar_cromosoma(self, flujos: np.ndarray) -> np.ndarray:
-        # 1) Sin flujo en rutas cerradas ni negativo
         flujos_reparados = np.where(self.habilitadas, np.maximum(flujos, 0.0), 0.0)
         m, n = flujos_reparados.shape
 
-        # 2) Reescala cada fila para que la suma coincida con la oferta
         suma_filas = flujos_reparados.sum(axis=1)
         con_flujo = suma_filas > 0
         flujos_reparados[con_flujo] *= (self.a[con_flujo] / suma_filas[con_flujo])[:, None]
@@ -152,13 +142,11 @@ class EvaluadorAG:
             columnas = np.flatnonzero(self.habilitadas[i])
             flujos_reparados[i, columnas] = self.a[i] / len(columnas)
 
-        # 3) Saca el exceso de las plantas (o acopios) saturados hacia el camino más barato con cupo
         usada = self.recursos.uso(flujos_reparados.sum(axis=0))
         for r in np.flatnonzero(usada > self.b + 1e-9):
             exceso = usada[r] - self.b[r]
             for j in self.recursos.caminos_que_usan(r):
                 filas = np.flatnonzero(flujos_reparados[:, j] > 0)
-                # Primero mueve lo de las empresas que menos pierden al cambiar de camino
                 filas = sorted(filas, key=lambda i, j=j: self._costo_alternativo(i, j, r, usada))
                 for i in filas:
                     if exceso <= 1e-9:
@@ -180,13 +168,11 @@ class EvaluadorAG:
 
         return flujos_reparados
 
-    # Un camino sirve de alternativa si está habilitado y no usa el recurso saturado
     def _es_alternativa(self, i: int, destino: int, recurso: int) -> bool:
         if not self.habilitadas[i, destino]:
             return False
         return recurso not in self.recursos.de(destino)
 
-    # Cupo de un camino = el menor cupo entre los recursos que usa
     def _cupo(self, camino: int, usada: np.ndarray) -> float:
         usados = self.recursos.de(camino)
         return float((self.b[usados] - usada[usados]).min())
@@ -198,10 +184,8 @@ class EvaluadorAG:
         return np.inf
 
     def evaluar(self, individuo) -> None:
-        # Calcula el costo Z, penaliza las violaciones y asigna el fitness
         individuo.cromosoma = self.reparar_cromosoma(individuo.cromosoma)
 
-        # Costo total
         individuo.costo_total = float(np.sum(individuo.cromosoma * self.C))
 
         oferta_asignada = np.sum(individuo.cromosoma, axis=1)
@@ -213,7 +197,6 @@ class EvaluadorAG:
 
         individuo.violaciones = float(violacion_oferta + violacion_capacidad)
 
-        # Fitness
         denominador = individuo.costo_total + (self.lambda_pen * individuo.violaciones)
         individuo.fitness = 1.0 / (denominador + 1e-10)
         individuo.evaluado = True
@@ -236,7 +219,6 @@ class OperadoresGeneticos:
         return Individuo(np.copy(elegido.cromosoma))
 
     def cruce_un_punto(self, padre1, padre2):
-        # El corte cae en el límite entre dos empresas (filas)
         m, _ = padre1.cromosoma.shape
         if m < 2:
             return Individuo(np.copy(padre1.cromosoma)), Individuo(np.copy(padre2.cromosoma))
@@ -248,7 +230,6 @@ class OperadoresGeneticos:
         return Individuo(hijo1_cromosoma), Individuo(hijo2_cromosoma)
 
     def cruce_dos_puntos(self, padre1, padre2):
-        # Intercambia el bloque de empresas entre dos cortes
         m, _ = padre1.cromosoma.shape
         if m < 3:
             return self.cruce_un_punto(padre1, padre2)
@@ -262,7 +243,6 @@ class OperadoresGeneticos:
         return Individuo(hijo1_cromosoma), Individuo(hijo2_cromosoma)
 
     def mutar_transferencia(self, individuo):
-        # Pasa una fracción del flujo de una planta a otra dentro de la misma empresa
         m, n = individuo.cromosoma.shape
         if n < 2:
             return
@@ -289,7 +269,6 @@ class MotorAG:
         self.inicializador = inicializador
         self.evaluador = evaluador
         self.operadores = operadores
-        # Mejor costo y costo promedio de cada generación
         self.historial: list[tuple[int, float, float]] = []
 
     def ejecutar(
@@ -322,15 +301,12 @@ class MotorAG:
             else:
                 generaciones_sin_mejora += 1
 
-            # Criterio de parada tras `paciencia` generaciones sin mejora
             if generaciones_sin_mejora >= paciencia:
                 break
 
-            # Elitismo: los mejores pasan intactos (ya evaluados)
             nueva_poblacion = [ind.copiar() for ind in poblacion[:elitismo]]
 
             while len(nueva_poblacion) < tam_poblacion:
-                # 1. Selección
                 if tipo_seleccion == "torneo":
                     padre1 = self.operadores.seleccion_torneo(poblacion)
                     padre2 = self.operadores.seleccion_torneo(poblacion)
@@ -338,7 +314,6 @@ class MotorAG:
                     padre1 = self.operadores.seleccion_ruleta(poblacion)
                     padre2 = self.operadores.seleccion_ruleta(poblacion)
 
-                # 2. Cruce
                 if self.operadores.rng.random() < tasa_cruce:
                     if tipo_cruce == "dos_puntos":
                         hijo1, hijo2 = self.operadores.cruce_dos_puntos(padre1, padre2)
@@ -348,13 +323,11 @@ class MotorAG:
                     hijo1 = Individuo(np.copy(padre1.cromosoma))
                     hijo2 = Individuo(np.copy(padre2.cromosoma))
 
-                # 3. Mutación
                 if self.operadores.rng.random() < tasa_mutacion:
                     self.operadores.mutar_transferencia(hijo1)
                 if self.operadores.rng.random() < tasa_mutacion:
                     self.operadores.mutar_transferencia(hijo2)
 
-                # 4. Reparación y evaluación
                 self.evaluador.evaluar(hijo1)
                 self.evaluador.evaluar(hijo2)
                 nueva_poblacion.extend([hijo1, hijo2])

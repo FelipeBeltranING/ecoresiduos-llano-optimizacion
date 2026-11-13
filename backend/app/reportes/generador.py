@@ -86,7 +86,6 @@ def _encabezado(titulo: str) -> list:
     ]
 
 
-# ---------- Ejecución ----------
 
 
 def pdf_ejecucion(detalle: EjecucionDetalle) -> bytes:
@@ -206,7 +205,6 @@ def excel_ejecucion(detalle: EjecucionDetalle) -> bytes:
     return salida.getvalue()
 
 
-# ---------- Análisis comparativo y de escalabilidad ----------
 
 
 def pdf_analisis(analisis: AnalisisSalida) -> bytes:

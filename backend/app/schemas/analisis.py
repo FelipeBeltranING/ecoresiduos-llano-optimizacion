@@ -7,12 +7,9 @@ from app.db.models import Metodo
 from app.schemas.optimizacion import ParametrosAGEntrada
 
 
-# Reporte comparativo exacto vs. AG con N corridas (HU-13)
 class ComparacionEntrada(BaseModel):
     corridas: int = Field(default=10, ge=1, le=30)
-    # Escenario único: compatibilidad con la versión de una sola fila
     escenario_id: uuid.UUID | None = None
-    # Varios escenarios: el reporte trae una fila por escenario
     escenarios: list[uuid.UUID] = Field(default_factory=list, max_length=6)
     parametros_ag: ParametrosAGEntrada = ParametrosAGEntrada()
 
@@ -22,7 +19,6 @@ class Tamano(BaseModel):
     plantas: int = Field(ge=2, le=60)
 
 
-# Escalabilidad con instancias sintéticas (HU-14)
 class EscalabilidadEntrada(BaseModel):
     tamanos: list[Tamano] = Field(
         default=[
@@ -58,7 +54,6 @@ class AnalisisResumen(BaseModel):
     creado_en: datetime
 
 
-# Historial de ejecuciones con filtros y paginación (HU-15)
 class EjecucionResumen(BaseModel):
     id: uuid.UUID
     metodo: Metodo

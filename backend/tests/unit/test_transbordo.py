@@ -17,8 +17,6 @@ from app.optimizacion.red import (
 from tests.utilidades import PENALIZACION_FICTICIA
 
 
-# Dos empresas, dos plantas y un acopio de capacidad 10.
-# Directo cuesta 100 COP/t; por el acopio cuesta 10 + 10 = 20 COP/t.
 def red_transbordo() -> RedLogistica:
     empresas = [DatosEmpresa("E1", 10), DatosEmpresa("E2", 10)]
     plantas = [DatosPlanta("P1", 10, 0), DatosPlanta("P2", 10, 0)]
@@ -39,7 +37,6 @@ def red_transbordo() -> RedLogistica:
 def test_costo_y_flujo_por_el_acopio() -> None:
     resultado = resolver_exacto(red_transbordo())
 
-    # 10 t por el acopio a 20 COP/t + 10 t directas a 100 COP/t
     assert resultado.estado == ESTADO_OPTIMO
     assert resultado.costo_total == pytest.approx(1_200)
     assert resultado.flujos_a_acopio.sum(axis=0) == pytest.approx([10])
@@ -50,7 +47,6 @@ def test_costo_y_flujo_por_el_acopio() -> None:
 def test_dual_del_acopio_saturado() -> None:
     resultado = resolver_exacto(red_transbordo())
 
-    # Una tonelada más de capacidad permite sustituir 100 por 20 COP/t
     assert resultado.duales_acopio == pytest.approx([-80])
 
 

@@ -4,7 +4,7 @@
   --font-sans:
     "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 
-  /* Paleta Orion · Fundamentos */
+  
   --color-primary: #1f7a4d;
   --color-primary-dark: #12392a;
   --color-primary-soft: #e8f3ec;
@@ -52,7 +52,7 @@
 }
 
 @layer components {
-  /* Escala tipográfica · Fundamentos */
+  
   .type-eyebrow {
     font-size: 12px;
     font-weight: 500;
@@ -130,7 +130,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Tablas de datos */
+  
   .tabla {
     width: 100%;
     border-collapse: separate;

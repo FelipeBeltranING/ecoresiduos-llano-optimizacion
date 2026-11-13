@@ -19,10 +19,8 @@ from app.core.config import settings
 
 PREFIJO_API = "/api/v1"
 
-# Aplicación principal
 app = FastAPI(title="EcoResiduos del Llano API", version="1.0.0")
 
-# CORS para el frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.lista_cors(),
@@ -31,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers de la versión 1
 app.include_router(health.router, prefix=PREFIJO_API)
 app.include_router(datos.router, prefix=PREFIJO_API)
 app.include_router(nodos.router, prefix=PREFIJO_API)

@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 
-# Respuesta de la validación de la red (HU-06)
 class ValidacionRedRespuesta(BaseModel):
     es_valida: bool
     oferta_total: float

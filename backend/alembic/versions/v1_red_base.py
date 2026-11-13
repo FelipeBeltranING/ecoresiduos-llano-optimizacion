@@ -12,7 +12,6 @@ depends_on: str | Sequence[str] | None = None
 TABLAS_V1 = ["nodo", "ruta", "parametro_global"]
 
 
-# Creación de las tablas de la red
 def upgrade() -> None:
     tipo_nodo = postgresql.ENUM("FUENTE", "ACOPIO", "PLANTA", name="tipo_nodo")
 
@@ -93,7 +92,6 @@ def upgrade() -> None:
         sa.Column("descripcion", sa.String(200), nullable=True),
     )
 
-    # Parámetros semilla
     op.bulk_insert(
         tabla_parametros,
         [
@@ -124,12 +122,10 @@ def upgrade() -> None:
         ],
     )
 
-    # Seguridad a nivel de fila: cierra la API REST de Supabase
     for tabla in TABLAS_V1:
         op.execute(f"ALTER TABLE {tabla} ENABLE ROW LEVEL SECURITY")
 
 
-# Reversión de la migración
 def downgrade() -> None:
     op.drop_table("parametro_global")
     op.drop_index("ix_ruta_destino_id", table_name="ruta")
