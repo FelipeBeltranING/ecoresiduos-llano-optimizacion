@@ -1,4 +1,3 @@
-"""Transbordo manual: caso pequeño con valores calculados a mano (HU-17)."""
 
 import numpy as np
 import pytest

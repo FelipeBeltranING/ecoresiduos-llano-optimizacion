@@ -1,21 +1,3 @@
-"""Genera el caso real del Meta (HU-19) a partir de fuentes públicas.
-
-Fuentes:
-- Evaluaciones Agropecuarias Municipales (EVA), MinAgricultura/UPRA, datos.gov.co (2pnw-mmge):
-  producción 2018 de palma de aceite (aceite crudo) y arroz (paddy verde) por municipio.
-- Inventario bovino y bufalino por ciclo de vacunación, FNG/ICA, datos.gov.co (cea5-4ctf):
-  vigencia 2025, ciclo I.
-- DIVIPOLA, DANE, datos.gov.co (gdxc-w37w): coordenadas de los municipios.
-- OSRM sobre OpenStreetMap (router.project-osrm.org): distancia vial y trazado de cada ruta.
-
-Uso (desde la raíz del repositorio, con internet):
-
-    python scripts/generar_caso_real.py
-
-Escribe backend/app/services/datos/caso_real_meta.json y caso_base_geometrias.json.
-Solo usa la biblioteca estándar. Las peticiones a OSRM se espacian para respetar el
-servidor de demostración.
-"""
 
 import json
 import time

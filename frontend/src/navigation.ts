@@ -20,7 +20,7 @@ export interface NavItem {
   end?: boolean;
 }
 
-/** Estaciones del topbar de escritorio, en el orden del diseño Orion. */
+
 export const allNavItems: NavItem[] = [
   {
     to: "/",
@@ -88,7 +88,7 @@ export const allNavItems: NavItem[] = [
   },
 ];
 
-/** Las cinco estaciones de la barra inferior móvil (la última abre el resto). */
+
 export const mobilePrimaryPaths = ["/", "/red", "/exacto", "/comparativo"] as const;
 
 export const mobilePrimaryNavItems: NavItem[] = mobilePrimaryPaths
@@ -99,7 +99,7 @@ export const mobileMoreNavItems: NavItem[] = allNavItems.filter(
   (item) => !(mobilePrimaryPaths as readonly string[]).includes(item.to),
 );
 
-/** Finds the deepest navigation entry that matches the current path. */
+
 export function findNavItem(pathname: string): NavItem | undefined {
   return [...allNavItems]
     .sort((a, b) => b.to.length - a.to.length)

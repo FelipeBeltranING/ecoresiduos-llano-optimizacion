@@ -1,9 +1,3 @@
-"""Índice de Criticidad Estructural (ICE) aplicado a la red logística (HU-20).
-
-Adaptación de ICE(i) = α·C_B(i) + β·C_D⁻(i) + γ·(1 − R(i)) de Vega-Linares, Beltrán-Tabares
-et al. (CICI 2026), propuesto para grafos de dependencias de microservicios. Aquí los nodos
-son plantas y acopios, y el "fallo" es cerrar el nodo (capacidad 0) y volver a optimizar.
-"""
 
 from dataclasses import dataclass, field
 from itertools import product
@@ -83,7 +77,6 @@ def _resolver_base(red: RedLogistica, penalizacion: float) -> _Base:
 
 
 def _recursos_reales(red: RedLogistica) -> list[tuple[int, str, str]]:
-    """(índice del recurso, código, tipo) de las plantas reales y los acopios."""
     lista = [
         (j, codigo, "PLANTA")
         for j, codigo in enumerate(red.codigos_plantas)
@@ -106,7 +99,6 @@ def _intermediacion(base: _Base, recurso: int, tipo: str) -> float:
 
 
 def _intermediacion_de_acopio(base: _Base, recurso: int) -> float:
-    """Fracción de pares empresa → planta cuyo camino más barato pasa por el acopio."""
     caminos = base.caminos
     costos = np.where(caminos.habilitadas, caminos.costos, np.inf)
     pares = pasan = 0
@@ -186,7 +178,6 @@ def _mecanismos(base: _Base, recurso: int) -> list[bool]:
 
 
 def simular_falla(red: RedLogistica, codigo: str, penalizacion: float) -> tuple[float, float]:
-    """Costo y toneladas que quedan sin planta (ficticia) al cerrar el nodo."""
     indice = {c: r for r, c, _ in _recursos_reales(red)}[codigo]
     cerrada = balancear(_con_capacidad(red, indice, 0.0), penalizacion)
     solucion = resolver_lp(cerrada)
@@ -207,7 +198,6 @@ def _ice(nodo: CriticidadNodo, pesos: tuple[float, float, float]) -> float:
 
 
 def correlacion(nodos: list[CriticidadNodo], pesos: tuple[float, float, float]) -> float | None:
-    """ρ de Spearman entre el ICE y el impacto observado (aumento de costo al cerrar)."""
     if len(nodos) < 3:
         return None
     ice = [_ice(nodo, pesos) for nodo in nodos]
@@ -218,7 +208,6 @@ def correlacion(nodos: list[CriticidadNodo], pesos: tuple[float, float, float]) 
 
 
 def calibrar(nodos: list[CriticidadNodo], paso: float = 0.1):
-    """Malla de (α, β, γ) con α + β + γ = 1 que maximiza ρ (los incidentes son las fallas)."""
     mejor = (None, None)
     pasos = int(round(1 / paso))
     for a, b in product(range(pasos + 1), repeat=2):

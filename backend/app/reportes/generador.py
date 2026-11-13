@@ -1,4 +1,3 @@
-"""Reportes en PDF (ReportLab) y Excel (openpyxl) de ejecuciones y análisis (HU-16)."""
 
 import io
 from datetime import datetime

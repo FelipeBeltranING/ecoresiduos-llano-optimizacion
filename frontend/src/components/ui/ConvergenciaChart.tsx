@@ -8,7 +8,7 @@ export interface PuntoConvergencia {
 
 interface ConvergenciaChartProps {
   puntos: PuntoConvergencia[];
-  /** Costo óptimo del modelo exacto, dibujado como referencia. */
+  
   optimo?: number | null;
   className?: string;
 }
@@ -23,7 +23,7 @@ function ticks(minimo: number, maximo: number, cantidad: number): number[] {
   return Array.from({ length: cantidad }, (_, i) => minimo + i * paso);
 }
 
-/** Mejor costo y costo promedio por generación del AG frente al óptimo exacto (HU-10). */
+
 export function ConvergenciaChart({ puntos, optimo, className = "" }: ConvergenciaChartProps) {
   if (puntos.length === 0) return null;
 

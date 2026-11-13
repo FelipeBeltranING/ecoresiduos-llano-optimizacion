@@ -1,5 +1,5 @@
 interface BarraProps {
-  /** Valor entre 0 y 1. */
+  
   valor: number;
   tono?: "primario" | "peligro" | "acento";
   className?: string;

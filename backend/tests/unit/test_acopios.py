@@ -1,4 +1,3 @@
-"""Centros de acopio como nodos de paso: flujo de costo mínimo por arcos (HU-17)."""
 
 import numpy as np
 import pytest

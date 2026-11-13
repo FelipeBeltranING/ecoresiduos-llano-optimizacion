@@ -3,7 +3,7 @@ import type { UsoPlanta } from "@/components/mapa/MapaReal";
 
 export const CODIGO_FICTICIA = "FICTICIA";
 
-/** Toneladas recibidas por cada planta frente a su capacidad. */
+
 export function usoDePlantas(nodos: Nodo[], flujos: Flujo[]): Record<string, UsoPlanta> {
   const uso: Record<string, UsoPlanta> = {};
   for (const nodo of nodos) {
@@ -43,7 +43,7 @@ export function formatoFecha(iso: string): string {
   );
 }
 
-/** Toneladas que entran a cada centro de acopio activo frente a su capacidad (HU-17). */
+
 export function usoDeAcopios(nodos: Nodo[], flujos: Flujo[]): Record<string, UsoPlanta> {
   const uso: Record<string, UsoPlanta> = {};
   for (const nodo of nodos) {
@@ -57,7 +57,7 @@ export function usoDeAcopios(nodos: Nodo[], flujos: Flujo[]): Record<string, Uso
   return uso;
 }
 
-/** La ejecución corresponde a la red activa si envía flujo desde exactamente las mismas empresas. */
+
 export function ejecucionVigente(flujos: Flujo[], nodos: Nodo[]): boolean {
   const empresas = new Set(
     nodos

@@ -32,7 +32,7 @@ const get = async <T>(url: string, params?: object) =>
 const post = async <T>(url: string, body?: unknown, timeout?: number) =>
   (await apiClient.post<T>(url, body, timeout ? { timeout } : undefined)).data;
 
-/** Claves de caché: al cambiar la red se invalidan todas las consultas que dependen de ella. */
+
 export const claves = {
   nodos: ["nodos"] as const,
   matriz: ["rutas", "matriz"] as const,
@@ -165,7 +165,7 @@ export const useEjecuciones = (filtros: FiltrosEjecuciones) =>
     queryFn: () => get<PaginaEjecuciones>("/ejecuciones", filtros),
   });
 
-/** Última ejecución de un método sobre la red base (sin escenario). */
+
 export function useUltimaEjecucion(metodo: Metodo) {
   const lista = useEjecuciones({ metodo, solo_base: true, tamano: 1 });
   const id = lista.data?.items[0]?.id;
@@ -270,7 +270,7 @@ export const useListaAnalisis = (tipo?: string) =>
     queryFn: () => get<AnalisisResumen[]>("/analisis", { tipo }),
   });
 
-/** Consulta un análisis y la repite cada 1,5 s mientras siga en curso. */
+
 export const useAnalisis = <R>(id: string | undefined) =>
   useQuery({
     queryKey: [...claves.analisis, id],

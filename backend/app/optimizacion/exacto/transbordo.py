@@ -1,16 +1,3 @@
-"""Transporte con centros de acopio resuelto sin solvers externos (HU-17).
-
-La red se expande a un problema de transporte balanceado:
-
-- Filas: empresas, salidas de cada acopio y una fila de holgura de capacidad.
-- Columnas: plantas, entradas de cada acopio y, si hace falta, una columna de
-  ajuste numérico para un excedente ínfimo de oferta.
-- La celda (salida del acopio, entrada del mismo acopio) tiene costo cero y
-  obliga a que lo que entra sea igual a lo que sale, sin superar la capacidad.
-
-La solución inicial factible se obtiene con un flujo máximo (Edmonds-Karp) y se
-optimiza con MODI. Todo el cálculo usa únicamente Python y NumPy.
-"""
 
 import time
 from dataclasses import dataclass

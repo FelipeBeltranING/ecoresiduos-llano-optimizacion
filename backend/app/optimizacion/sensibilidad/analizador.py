@@ -1,4 +1,3 @@
-"""Escenarios de sensibilidad (HU-11) y rangos de estabilidad por re-optimización (HU-12)."""
 
 from dataclasses import dataclass
 
@@ -145,10 +144,6 @@ def _soporte(flujos: np.ndarray) -> np.ndarray:
 def _buscar_limite(
     valor: float, sigue_igual, direccion: int, minimo: float | None = 0.0
 ) -> float | None:
-    """Mayor desplazamiento en `direccion` (+1 o -1) que no cambia la base óptima.
-
-    Devuelve el valor límite, o None si no hay límite (infinito) dentro de la búsqueda.
-    """
     paso = max(1.0, abs(valor) * 0.01)
     bueno = 0.0
     tope = max(abs(valor) * 50, 1e6)
@@ -194,7 +189,6 @@ class RangosEstabilidad:
 
 
 def calcular_rangos(red: RedLogistica) -> RangosEstabilidad:
-    """Rangos de costos unitarios (base óptima fija) y de capacidad/oferta (duales fijos)."""
     if int(red.rutas_habilitadas.sum()) > MAX_VARIABLES_RANGOS:
         return RangosEstabilidad({}, {}, {}, omitido="Red demasiado grande para calcular rangos")
     base = resolver_lp(red)
