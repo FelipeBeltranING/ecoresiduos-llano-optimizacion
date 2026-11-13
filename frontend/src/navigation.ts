@@ -48,7 +48,7 @@ export const allNavItems: NavItem[] = [
     to: "/exacto",
     label: "Exacto",
     shortLabel: "Exacto",
-    description: "Solución óptima con PuLP y CBC",
+    description: "Solución óptima con transbordo y MODI",
     icon: Target,
   },
   {

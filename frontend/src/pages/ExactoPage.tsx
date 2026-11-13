@@ -41,7 +41,7 @@ export function ExactoPage() {
   const plantas = nodosActivos.filter((n) => n.tipo === "PLANTA");
   const flujos = detalle?.flujos ?? [];
   const uso = { ...usoDePlantas(nodosActivos, flujos), ...usoDeAcopios(nodosActivos, flujos) };
-  
+
   const acopios = nodosActivos
     .filter((n) => n.tipo === "ACOPIO" && flujos.some((f) => f.destino === n.codigo))
     .map((n) => n.codigo);
@@ -69,8 +69,8 @@ export function ExactoPage() {
         title="Resultado del modelo exacto"
         description={
           detalle
-            ? `Programación lineal con PuLP + CBC · ${formatoFecha(detalle.creado_en)} · ${formatNumber(detalle.tiempo_ms ?? 0)} ms`
-            : "Programación lineal con PuLP + CBC"
+            ? `Transporte con transbordo resuelto con MODI · ${formatoFecha(detalle.creado_en)} · ${formatNumber(detalle.tiempo_ms ?? 0)} ms`
+            : "Transporte con transbordo resuelto con MODI"
         }
         kpis={[
           { valor: detalle?.estado ?? "—", etiqueta: "Estado del solver" },

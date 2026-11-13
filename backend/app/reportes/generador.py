@@ -90,7 +90,9 @@ def _encabezado(titulo: str) -> list:
 
 def pdf_ejecucion(detalle: EjecucionDetalle) -> bytes:
     estilos = getSampleStyleSheet()
-    metodo = "Modelo exacto (PuLP + CBC)" if detalle.metodo == "EXACTO" else "Algoritmo Genético"
+    metodo = "Algoritmo Genético"
+    if detalle.metodo == "EXACTO":
+        metodo = "Modelo exacto (transbordo + MODI)"
     contenido = _encabezado(f"Reporte de ejecución · {metodo}")
     contenido.append(
         _tabla(

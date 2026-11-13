@@ -16,7 +16,7 @@ import { activos, usoDePlantas, valorSensibilidad, ejecucionVigente } from "@/li
 const accesos = [
   { to: "/red", titulo: "Red", texto: "Empresas, plantas y mapa real" },
   { to: "/rutas", titulo: "Rutas", texto: "Distancias OSRM y matriz de costos" },
-  { to: "/exacto", titulo: "Exacto", texto: "Óptimo global con PuLP + CBC" },
+  { to: "/exacto", titulo: "Exacto", texto: "Óptimo global con transbordo y MODI" },
   { to: "/ag", titulo: "Genético", texto: "Parámetros y convergencia" },
   { to: "/sensibilidad", titulo: "Sensibilidad", texto: "Escenarios, duales y rangos" },
   { to: "/comparativo", titulo: "Comparativo", texto: "Exacto vs. AG y escalabilidad" },
