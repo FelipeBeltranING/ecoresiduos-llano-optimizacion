@@ -16,7 +16,7 @@ const decimal = (valor: number, digitos = 2) =>
     maximumFractionDigits: digitos,
   }).format(valor);
 
-/** Pesos en décimas: α y β se eligen y γ = 1 − α − β. */
+
 function usePesos() {
   const [alfa, setAlfa] = useState(5);
   const [beta, setBeta] = useState(3);

@@ -1,4 +1,3 @@
-"""Índice de Criticidad Estructural (ICE) sobre la red logística (HU-20)."""
 
 import pytest
 

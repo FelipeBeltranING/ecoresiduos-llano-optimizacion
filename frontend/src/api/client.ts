@@ -6,7 +6,7 @@ interface ApiErrorPayload {
   detail?: string | Array<{ msg?: string }>;
 }
 
-/** Error normalized for the UI, with the HTTP status when available. */
+
 export class ApiError extends Error {
   readonly status?: number;
 
@@ -17,7 +17,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Removes trailing slashes and falls back to the local /api/v1 prefix. */
+
 export function normalizeBaseUrl(url: string | undefined): string {
   const value = url?.trim();
   if (!value) return DEFAULT_API_URL;

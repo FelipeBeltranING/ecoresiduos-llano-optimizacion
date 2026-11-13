@@ -1,21 +1,6 @@
 import numpy as np
 from app.optimizacion.exacto.verificar_balanceo import verificar_balanceo
 def vogel(costos, oferta, demanda):
-    """
-    Obtiene una solución inicial factible usando el Método de Aproximación
-    de Vogel (VAM).
-
-    Parámetros:
-    -----------
-    costos : list[list] o np.ndarray (m x n) -> matriz de costos unitarios
-    oferta : list o np.ndarray (m)           -> oferta de cada origen
-    demanda: list o np.ndarray (n)           -> demanda de cada destino
-
-    Retorna:
-    --------
-    asignacion : np.ndarray (m x n) -> matriz con las cantidades asignadas
-    costo_total: float              -> costo total de la solución inicial
-    """
     balanceado, oferta, demanda = verificar_balanceo(oferta, demanda)
 
     costos = np.array(costos, dtype=float)

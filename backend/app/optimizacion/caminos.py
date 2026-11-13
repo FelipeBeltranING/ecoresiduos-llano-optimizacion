@@ -1,9 +1,3 @@
-"""Red vista por caminos (HU-17).
-
-Un camino es `empresa → planta` o `empresa → acopio → planta` y su costo es la suma de sus
-arcos. Con esta vista el AG y la re-optimización siguen trabajando con una matriz
-empresa × camino; sin acopios, los caminos son exactamente las plantas.
-"""
 
 from dataclasses import dataclass
 

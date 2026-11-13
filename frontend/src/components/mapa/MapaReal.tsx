@@ -26,14 +26,14 @@ interface MapaRealProps {
   rutas?: Ruta[];
   flujos?: Flujo[];
   usoPlantas?: Record<string, UsoPlanta>;
-  /** Muestra en gris todos los trazados viales disponibles, además de los flujos. */
+  
   mostrarRutas?: boolean;
   alto?: string;
   etiqueta?: string;
   onSeleccionarNodo?: (codigo: string) => void;
-  /** Clic en el mapa: devuelve latitud y longitud (para ubicar un nodo nuevo). */
+  
   onClicMapa?: (latitud: number, longitud: number) => void;
-  /** Punto provisional del nodo que se está creando. */
+  
   puntoNuevo?: [number, number] | null;
 }
 
@@ -68,10 +68,7 @@ function trazado(ruta: Ruta | undefined, origen: Nodo, destino: Nodo): LatLngExp
   ];
 }
 
-/**
- * Mapa real de la red sobre OpenStreetMap (HU-18): empresas, plantas y acopios en sus
- * coordenadas, y los flujos dibujados sobre el trazado vial que devuelve OSRM.
- */
+
 export function MapaReal({
   nodos,
   rutas = [],

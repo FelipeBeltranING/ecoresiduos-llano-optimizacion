@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 
 
 class ModeloFlujoCostoMinimo(ABC):
-    """Clase base abstracta para modelos de flujo de costo mínimo."""
 
     def __init__(self, costos, oferta, demanda):
         self.costos = np.array(costos, dtype=float)
@@ -19,11 +18,6 @@ class ModeloFlujoCostoMinimo(ABC):
 
 
 class ModeloTransporte(ModeloFlujoCostoMinimo):
-    """
-    Implementa el modelo de transporte.
-    - Solución inicial: Vogel (VAM)
-    - Optimización: MODI (u-v) con corrección de degeneración
-    """
 
     def __init__(self, costos, oferta, demanda):
         super().__init__(costos, oferta, demanda)
@@ -31,7 +25,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         self._balancear()
 
     def _balancear(self):
-        """Reutiliza la lógica de verificación de balanceo."""
         so, sd = self.oferta.sum(), self.demanda.sum()
         if np.isclose(so, sd):
             self.balanceado = True
@@ -47,7 +40,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         self.balanceado = False
 
     def _vogel_inicial(self):
-        """VAM para obtener solución inicial factible."""
         m, n = self.costos.shape
         oferta = self.oferta.copy()
         demanda = self.demanda.copy()
@@ -88,7 +80,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         return asignacion
 
     def _potenciales(self):
-        """Calcula u_i y v_j para celdas básicas."""
         m, n = self.costos.shape
         u = np.full(m, np.nan)
         v = np.full(n, np.nan)
@@ -110,7 +101,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         return u, v
 
     def _costos_reducidos(self, u, v):
-        """δ_ij = c_ij - u_i - v_j para celdas no básicas."""
         m, n = self.costos.shape
         deltas = np.full((m, n), np.nan)
         for i in range(m):
@@ -121,7 +111,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
         return deltas
 
     def _corregir_degeneracion(self):
-        """Añade celdas con asignación 0 para alcanzar m+n-1 básicas."""
         m, n = self.costos.shape
         basicas = [(i, j) for i in range(m) for j in range(n)
                    if not np.isclose(self.asignacion[i, j], 0)]
@@ -142,17 +131,12 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
                 faltan -= 1
 
     def _encontrar_ciclo(self, inicio):
-        """
-        Búsqueda simplificada de ciclo para MODI.
-        Retorna lista de posiciones alternando +, -, +, -...
-        """
         m, n = self.costos.shape
         basicas = [(i, j) for i in range(m) for j in range(n)
                    if not np.isclose(self.asignacion[i, j], 0)]
         return None
 
     def resolver(self):
-        """VAM + MODI (MODI delega la verificación de optimalidad a PuLP/CBC)."""
         self._vogel_inicial()
         print("=== Solución inicial (VAM) ===")
         print(self.asignacion)
@@ -164,7 +148,6 @@ class ModeloTransporte(ModeloFlujoCostoMinimo):
 
 
 class SolverExacto:
-    """Resuelve el modelo de transporte usando PuLP + CBC."""
 
     @staticmethod
     def resolver(modelo: ModeloFlujoCostoMinimo):
@@ -196,7 +179,6 @@ class SolverExacto:
 
 
 class ModeloFactory:
-    """Fábrica para crear instancias de modelos de transporte."""
 
     @staticmethod
     def crear_modelo(tipo, costos, oferta, demanda):

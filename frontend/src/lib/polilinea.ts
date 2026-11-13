@@ -1,7 +1,4 @@
-/**
- * Decodifica una polilínea codificada (algoritmo de Google, precisión 5),
- * el formato en que OSRM devuelve el trazado vial de cada ruta.
- */
+
 export function decodificarPolilinea(texto: string, precision = 5): [number, number][] {
   const factor = 10 ** precision;
   const puntos: [number, number][] = [];

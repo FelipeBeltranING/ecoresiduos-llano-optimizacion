@@ -1,4 +1,4 @@
-/** Tipos de la API v1 de EcoResiduos (espejo de los esquemas Pydantic del backend). */
+
 
 export type TipoNodo = "FUENTE" | "ACOPIO" | "PLANTA";
 export type Metodo = "EXACTO" | "GENETICO";

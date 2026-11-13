@@ -1,6 +1,3 @@
-"""
-Módulo de Análisis de Sensibilidad para el problema de optimización de residuos.
-"""
 
 import numpy as np
 from typing import Dict, Any, List
@@ -15,20 +12,6 @@ def analizar_sensibilidad_costos(
     rango_variacion: float = 0.20,
     pasos: int = 10
 ) -> Dict[str, Any]:
-    """
-    Realiza un análisis de sensibilidad parametric sobre los costos de transporte (coeficientes de c).
-
-    Args:
-        c (np.ndarray): Coeficientes de costo de la función objetivo.
-        A_eq (np.ndarray): Matriz de restricciones de igualdad/balance de flujo.
-        b_eq (np.ndarray): Vector del lado derecho (oferta/demanda en los nodos).
-        bounds (List[tuple]): Límites (capacidad mínima y máxima) para cada arco/ruta.
-        rango_variacion (float): Porcentaje de variación (+/- 20% por defecto).
-        pasos (int): Cantidad de puntos evaluados dentro del rango.
-
-    Returns:
-        Dict[str, Any]: Resultados del impacto de las variaciones en el costo total.
-    """
     res_base = linprog(c=c, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
     
     if not res_base.success:
