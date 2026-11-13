@@ -14,14 +14,14 @@
 
 \title{Optimización de la red logística de EcoResiduos del Llano: modelo exacto, algoritmo genético y criticidad estructural}
 
-% TODO(equipo): agregar correos institucionales si el formato los pide.
 \author{\IEEEauthorblockN{David Felipe Beltrán Tabares (Líder)}
 \IEEEauthorblockN{Julián David Báez Parra (Modelado y Optimización)}
 \IEEEauthorblockN{Martín Pineda Jaramillo (Metaheurísticas)}
 \IEEEauthorblockN{Juan David Navarro Bermúdez (Software e Interfaz)}
 \IEEEauthorblockA{Grupo Orion · Optimización 2026-II\\
 Facultad de Ciencias Básicas e Ingeniería, Universidad de los Llanos\\
-Villavicencio, Colombia}}
+Villavicencio, Colombia\\
+\{df.btabares, jd.bparra, m.pineda, ju.da.navarro\}@unillanos.edu.co}}
 
 \maketitle
 
@@ -29,8 +29,8 @@ Villavicencio, Colombia}}
 EcoResiduos del Llano recoge residuos agroindustriales (palma, arroz, ganadería y forestal) en el
 departamento del Meta y los lleva a plantas de aprovechamiento. La asignación empírica de rutas
 genera sobrecostos. Este trabajo modela la red como un grafo dirigido y resuelve el problema de flujo
-de costo mínimo con dos métodos: un modelo de programación lineal (PuLP + CBC) y un algoritmo genético
-(AG) con reparación de factibilidad. El sistema permite editar la red en línea, analizar escenarios
+de costo mínimo con dos métodos: un método exacto propio, basado en el modelo de transporte y
+transbordo resuelto con MODI, y un algoritmo genético (AG) con reparación de factibilidad. El sistema permite editar la red en línea, analizar escenarios
 de sensibilidad (combustible, oferta y cuellos de botella), obtener precios sombra y rangos de
 estabilidad, y comparar ambos métodos en costo, tiempo y brecha. Además, se incorporan centros de
 acopio como nodos de paso y se adapta el Índice de Criticidad Estructural (ICE) para identificar las
@@ -101,9 +101,21 @@ donde $\delta^+(v)$ y $\delta^-(v)$ son los arcos que salen y entran de $v$. Si
 $\sum_i a_i > \sum_j b_j$, se agrega una planta ficticia con capacidad igual al exceso y una
 penalización de $10^6$~COP/t, de modo que el modelo siempre es factible y las toneladas sin planta
 quedan a la vista. Sin acopios ($T=\emptyset$), el modelo se reduce exactamente al problema de
-transporte clásico, que es la prueba de regresión del sistema.
+transporte clásico~\cite{hillier}, que es la prueba de regresión del sistema.
+
+\subsection{Resolución exacta}
+El modelo se resuelve como un problema de transbordo~\cite{hillier}: cada acopio activo aparece como
+una fila (salida) y una columna (entrada) con oferta y demanda iguales a su capacidad, y la celda que
+las une tiene costo cero; así, lo que entra al acopio es igual a lo que sale y nunca supera su
+capacidad. Una fila de holgura balancea la oferta con la capacidad de las plantas. La solución inicial
+factible se obtiene con un flujo máximo (Edmonds-Karp~\cite{edmonds}) y se mejora con el método MODI
+hasta que ningún costo reducido es negativo. Los precios sombra de la oferta salen de los potenciales
+$u_i$ del óptimo, y los de capacidad se obtienen re-optimizando con una tonelada adicional. Todo está
+implementado en Python y NumPy, sin solvers externos.
 
 \section{Diseño del algoritmo genético}
+El AG sigue el esquema clásico de Goldberg~\cite{goldberg}, adaptado a la estructura del problema.
+
 \textbf{Cromosoma.} Una matriz empresa $\times$ camino, donde un camino es $i\to j$ o
 $i\to t\to j$, con costo igual a la suma de sus arcos. Sin acopios, la matriz es la de transporte
 $m\times n$. Cada fila reparte la oferta de una empresa.
@@ -127,14 +139,14 @@ individuos son factibles y la penalización solo actúa como respaldo.
 
 \section{Arquitectura del sistema}
 El sistema sigue una arquitectura por capas. El backend (FastAPI, Python~3.12) expone una API REST
-con módulos independientes: \emph{red} (estructura y validación), \emph{exacto} (PuLP + CBC),
+con módulos independientes: \emph{red} (estructura y validación), \emph{exacto} (transbordo y MODI),
 \emph{genético}, \emph{sensibilidad} (re-optimización paramétrica con HiGHS~\cite{highs}) y
 \emph{criticidad} (ICE). Los datos persisten en PostgreSQL con migraciones versionadas (Alembic). El
-frontend (React + TypeScript) ofrece pantallas de red, rutas, exacto, genético, sensibilidad, riesgo,
-comparativo e historial, y un mapa real sobre OpenStreetMap~\cite{osm} con trazados viales de
-OSRM~\cite{osrm}. Los reportes se exportan en PDF y Excel. Todo se ejecuta con
-\texttt{docker compose up}; la integración continua corre el lint, las migraciones y las pruebas en
-cada cambio.
+frontend (React + TypeScript) ofrece pantallas de panel, red, rutas, exacto, genético, sensibilidad,
+riesgo, comparativo e historial, valida los formularios antes de enviarlos y muestra un mapa real sobre
+OpenStreetMap~\cite{osm} con trazados viales de OSRM~\cite{osrm}. Los reportes se exportan en PDF y
+Excel. Todo se ejecuta con \texttt{docker compose up}; la integración continua corre el lint, las
+migraciones y las pruebas (112 en el backend) en cada cambio.
 
 \section{Datos de prueba regionales}
 \textbf{Caso base.} 10 empresas (890~t/semana) y 4 plantas (950~t de capacidad) con distancias viales
@@ -150,7 +162,7 @@ hacia Puerto Gaitán y Granada, con flete consolidado de 200~COP/t·km hacia las
 
 \section{Resultados}
 \subsection{Solución óptima}
-En el caso base, $Z^* = 64\,691\,000$~COP/semana (CBC, 30~ms). Villavicencio y Restrepo quedan
+En el caso base, $Z^* = 64\,691\,000$~COP/semana (MODI, 3~ms). Villavicencio y Restrepo quedan
 saturadas, con precios sombra de $-17\,750$ y $-14\,250$~COP/t: cada tonelada adicional de capacidad
 en Villavicencio ahorraría 17\,750~COP por semana. Granada (5~t libres) y Puerto Gaitán (55~t) tienen
 precio sombra cero. En el caso real, $Z^* = 59\,295\,262$~COP/semana, sin planta ficticia.
@@ -182,32 +194,35 @@ Villavicencio $-30$\,\%$^{\dagger}$ & 93{,}89 & +45{,}1\,\% & 0{,}00\,\% \\
 
 \subsection{Comparativo exacto frente al AG}
 En 10 corridas sobre el caso base (población 100, hasta 300 generaciones), el AG alcanzó el óptimo en
-todas (brecha media $<10^{-7}$\,\%), con un tiempo medio de 1{,}9~s frente a 30~ms del exacto. En
-instancias sintéticas reproducibles del Meta (Tabla~\ref{tab:escala}), la brecha crece con el tamaño y
-el exacto sigue siendo más rápido: para un problema lineal de este tamaño, el método exacto domina. El
-valor del AG está en que tolera extensiones no lineales (costos fijos, economías de escala) sin
-cambiar su estructura.
+todas (brecha media $<10^{-7}$\,\%), con un tiempo medio de 2{,}2~s frente a 3~ms del exacto. En
+instancias sintéticas reproducibles del Meta (Tabla~\ref{tab:escala}), la brecha del AG crece con el
+tamaño, pero se mantiene por debajo del 1\,\% y sin violaciones. El tiempo del exacto crece más rápido:
+nuestra implementación de MODI recorre la matriz completa en cada iteración y, en $100\times20$, ya
+tarda más que el AG (con CBC, usado en el Sprint~1, ese caso tomaba 0{,}2~s). Aun así, para un problema lineal el exacto es preferible porque garantiza el
+óptimo; para instancias mayores convendría un solver de PL optimizado, como HiGHS, que ya usamos en
+la sensibilidad. El valor del AG está en que tolera extensiones no lineales (costos fijos, economías
+de escala) sin cambiar su estructura.
 
 \begin{table}[h]
 \centering
-\caption{Escalabilidad (semilla 42)}
+\caption{Escalabilidad (semilla 42; AG con población 100 y hasta 300 generaciones)}
 \label{tab:escala}
 \begin{tabular}{@{}lrrr@{}}
 \toprule
 Empresas $\times$ plantas & Exacto (ms) & AG (s) & Brecha AG \\
 \midrule
-$10\times4$ & 51 & 3{,}0 & 0{,}00\,\% \\
-$30\times8$ & 61 & 4{,}0 & 0{,}19\,\% \\
-$50\times10$ & 70 & 8{,}6 & 0{,}48\,\% \\
-$100\times20$ & 216 & 9{,}8 & 0{,}91\,\% \\
+$10\times4$ & 4 & 1{,}2 & 0{,}00\,\% \\
+$30\times8$ & 97 & 3{,}6 & 0{,}12\,\% \\
+$50\times10$ & 354 & 3{,}4 & 0{,}40\,\% \\
+$100\times20$ & 6\,148 & 4{,}8 & 0{,}77\,\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Centros de acopio}
 Con los dos acopios, $Z^*$ baja a 61\,761\,025~COP/semana (ahorro del 4{,}5\,\%): pasan 160~t por
-Puerto López y 85~t por San Martín, ninguno saturado. El AG por caminos llega a una brecha de
-0{,}64\,\% sin violaciones. Si los acopios no tienen cupo, el modelo vuelve exactamente a
+Puerto López y 85~t por San Martín, ninguno saturado. El AG por caminos queda a menos del 1\,\% del
+óptimo (0{,}99\,\% en la corrida de referencia) sin violaciones. Si los acopios no tienen cupo, el modelo vuelve exactamente a
 64\,691\,000, lo que confirma que la generalización conserva el modelo original.
 
 \subsection{Criticidad estructural (ICE)}
@@ -227,10 +242,12 @@ $\rho = 1{,}00$. Como en el artículo, el término $1-R$ reordena el ranking: Pu
 mismo flujo que Restrepo, pero su holgura y su precio sombra cero lo hacen menos crítico. Una búsqueda
 en malla de los pesos muestra que, en el caso base, la dependencia $C_D^-$ sola explica mejor el
 impacto ($\rho=0{,}95$). Con solo 4 a 6 nodos, estos resultados son evidencia preliminar y no una
-validación concluyente; constituyen la prueba empírica que el artículo dejó como trabajo futuro.
+validación concluyente; son un primer paso hacia la prueba empírica que el artículo dejó como
+trabajo futuro.
 
 \section{Conclusiones y trabajo futuro}
-El modelo exacto resuelve el problema en milisegundos y entrega la información de gestión más útil:
+El método exacto resuelve los casos de la empresa en milisegundos y entrega la información de gestión
+más útil:
 qué plantas están saturadas y cuánto vale ampliarlas. El AG, con reparación por recursos, alcanza el
 óptimo en el caso base y se mantiene por debajo del 1\,\% de brecha en instancias de 100 empresas. La
 red es sensible sobre todo a la capacidad: la ampliación de Villavicencio es la inversión prioritaria,
@@ -239,8 +256,9 @@ misma planta crítica que la simulación de fallas y ofrece una lectura de riesg
 gerencia.
 
 Como trabajo futuro se propone calibrar el ICE con incidentes reales de la empresa, alimentar con
-estas características una red neuronal de grafos (GAT), como plantea~\cite{ice}, e incorporar costos
-fijos de apertura de acopios, que convierten el problema en uno entero mixto donde el AG gana ventaja.
+estas características una red neuronal de grafos (GAT), como plantea~\cite{ice}, acelerar el método
+exacto para instancias grandes e incorporar costos fijos de apertura de acopios, que convierten el
+problema en uno entero mixto donde el AG puede ganar ventaja.
 
 \section*{Declaración de uso de inteligencia artificial}
 % TODO(equipo): ajustar esta declaración al uso real.
@@ -253,10 +271,8 @@ autores, que asumen la responsabilidad del contenido.
 New York, NY, USA: McGraw-Hill, 2015.
 \bibitem{goldberg} D.~E. Goldberg, \emph{Genetic Algorithms in Search, Optimization, and Machine
 Learning}. Reading, MA, USA: Addison-Wesley, 1989.
-\bibitem{pulp} S.~Mitchell, M.~O'Sullivan e I.~Dunning, ``PuLP: A linear programming toolkit for
-Python,'' Univ. of Auckland, Auckland, New Zealand, 2011.
-\bibitem{cbc} J.~Forrest y R.~Lougee-Heimer, ``CBC user guide,'' en \emph{Emerging Theory, Methods, and
-Applications}, INFORMS, 2005, pp.~257--277.
+\bibitem{edmonds} J.~Edmonds y R.~M. Karp, ``Theoretical improvements in algorithmic efficiency for
+network flow problems,'' \emph{J. ACM}, vol.~19, no.~2, pp.~248--264, 1972.
 \bibitem{highs} Q.~Huangfu y J.~A.~J. Hall, ``Parallelizing the dual revised simplex method,''
 \emph{Math. Program. Comput.}, vol.~10, no.~1, pp.~119--142, 2018.
 \bibitem{ice} L.~A. Vega-Linares, D.~F. Beltrán-Tabares, O.~L. Vega-Márquez y N.~E. Suat-Rojas,
@@ -267,12 +283,12 @@ Universidad de los Llanos, Villavicencio, 2026.
 \emph{Sociometry}, vol.~40, no.~1, pp.~35--41, 1977.
 \bibitem{spearman} C.~Spearman, ``The proof and measurement of association between two things,''
 \emph{Amer. J. Psychol.}, vol.~15, no.~1, pp.~72--101, 1904.
-\bibitem{eva} Ministerio de Agricultura y Desarrollo Rural y UPRA, ``Evaluaciones Agropecuarias
-Municipales (EVA),'' 2018. [En línea]. Disponible: datos.gov.co % TODO(equipo): URL exacta
-\bibitem{ica} Instituto Colombiano Agropecuario y FNG, ``Censo pecuario nacional,'' 2025. [En línea].
-Disponible: ica.gov.co % TODO(equipo): URL exacta
-\bibitem{divipola} DANE, ``Codificación de la División Político-Administrativa de Colombia
-(DIVIPOLA),'' 2024. [En línea]. Disponible: dane.gov.co % TODO(equipo): URL exacta
+\bibitem{eva} Ministerio de Agricultura y Desarrollo Rural, ``Evaluaciones Agropecuarias Municipales
+EVA,'' datos.gov.co, 2019. [En línea]. Disponible: \url{https://www.datos.gov.co/d/2pnw-mmge}
+\bibitem{ica} Fondo Nacional del Ganado (FNG), ``Inventario bovino y bufalino ciclo de vacunación,''
+datos.gov.co, 2025. [En línea]. Disponible: \url{https://www.datos.gov.co/d/cea5-4ctf}
+\bibitem{divipola} DANE, ``DIVIPOLA -- Códigos municipios,'' datos.gov.co, 2025. [En línea].
+Disponible: \url{https://www.datos.gov.co/d/gdxc-w37w}
 \bibitem{osrm} D.~Luxen y C.~Vetter, ``Real-time routing with OpenStreetMap data,'' en \emph{Proc.
 19th ACM SIGSPATIAL Int. Conf. Adv. Geographic Inf. Syst.}, 2011, pp.~513--516.
 \bibitem{osm} OpenStreetMap contributors, ``OpenStreetMap,'' 2026. [En línea]. Disponible:
