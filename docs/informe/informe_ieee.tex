@@ -198,7 +198,7 @@ todas (brecha media $<10^{-7}$\,\%), con un tiempo medio de 2{,}2~s frente a 3~m
 instancias sintéticas reproducibles del Meta (Tabla~\ref{tab:escala}), la brecha del AG crece con el
 tamaño, pero se mantiene por debajo del 1\,\% y sin violaciones. El tiempo del exacto crece más rápido:
 nuestra implementación de MODI recorre la matriz completa en cada iteración y, en $100\times20$, ya
-tarda más que el AG. Aun así, para un problema lineal el exacto es preferible porque garantiza el
+tarda más que el AG (con CBC, usado en el Sprint~1, ese caso tomaba 0{,}2~s). Aun así, para un problema lineal el exacto es preferible porque garantiza el
 óptimo; para instancias mayores convendría un solver de PL optimizado, como HiGHS, que ya usamos en
 la sensibilidad. El valor del AG está en que tolera extensiones no lineales (costos fijos, economías
 de escala) sin cambiar su estructura.

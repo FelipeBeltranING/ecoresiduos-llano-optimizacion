@@ -1,5 +1,7 @@
 # Guía: conectar el modelo exacto (HU-07)
 
+> **Nota (13 nov 2026): guía histórica del Sprint 1.** Desde el PR #58 el exacto ya no usa PuLP + CBC: se resuelve como transbordo con flujo máximo (Edmonds-Karp) y MODI en `app/optimizacion/exacto/transbordo.py`; `modelo_transporte.py` quedó como adaptador. La formulación y los valores de referencia de esta guía siguen siendo válidos.
+>
 > **Estado (10 nov 2026): conectado.** La implementación está en `app/optimizacion/exacto/modelo_transporte.py` (PuLP + CBC) y el verificador en `app/optimizacion/verificador.py`. Las pruebas de aceptación de `tests/unit/test_aceptacion_exacto.py` están activas y pasan.
 
 Esta guía explica qué falta para que `POST /api/v1/optimizacion/exacto` deje de responder

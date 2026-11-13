@@ -40,7 +40,7 @@
 ## Preguntas probables
 
 - **¿Por qué la planta ficticia?** Si la oferta supera la capacidad, el modelo sería infactible. La ficticia absorbe el exceso con una penalización de 10⁶ COP/t y muestra cuántas toneladas no caben.
-- **¿Por qué usar un AG si el exacto da el óptimo?** En redes pequeñas el exacto es más rápido, pero nuestro MODI en Python tarda entre 5 y 11 s en 100 × 20, lo mismo que el AG (brecha de 0,91 %). Además, el AG sirve cuando entran costos fijos o no linealidades; su estructura no cambia.
+- **¿Por qué usar un AG si el exacto da el óptimo?** En redes pequeñas el exacto es más rápido, pero nuestro MODI en Python tarda entre 5 y 11 s en 100 × 20 según la máquina, igual o más que el AG (que queda a 0,77 % del óptimo). Además, el AG sirve cuando entran costos fijos o no linealidades; su estructura no cambia.
 - **¿Por qué no usan PuLP?** Se usó en el Sprint 1. En el PR #58 el exacto pasó a un transbordo con flujo máximo y MODI propios, sin solver externo; los valores de referencia (Z*, duales, escenarios) no cambiaron.
 - **¿Cómo se calculan los rangos?** Con re-optimización paramétrica: se mueve cada parámetro hasta que cambia la base óptima (o los duales), con búsqueda y bisección.
 - **¿Qué significa ρ = 0,80?** Que el ranking del ICE y el ranking del impacto real se parecen mucho. Con 4 plantas es evidencia preliminar, y así lo decimos.
