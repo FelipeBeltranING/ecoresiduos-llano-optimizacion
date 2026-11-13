@@ -281,10 +281,10 @@ curl -X POST http://localhost:8000/api/v1/datos/caso-base
 curl -X POST http://localhost:8000/api/v1/datos/caso-real
 ```
 
-**Todo con Docker** (PostgreSQL 17 local + API, sin Supabase):
+**Todo con Docker** (PostgreSQL 17 local + API + frontend, sin Supabase):
 
 ```bash
-docker compose up -d --build    # API en http://localhost:8000/docs
+docker compose up -d --build    # Frontend en http://localhost:5173 · API en http://localhost:8000/docs
 ```
 
 **Regenerar el caso real** desde las fuentes públicas (requiere internet):

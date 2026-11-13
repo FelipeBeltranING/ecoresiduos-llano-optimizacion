@@ -1,5 +1,5 @@
 # Entorno local del proyecto Orion.
-#   docker compose up -d          → PostgreSQL 17 (localhost:5432) y la API (localhost:8000)
+#   docker compose up -d          → PostgreSQL 17 (localhost:5432), API (localhost:8000) y frontend (localhost:5173)
 #   docker compose up -d db       → solo la base de datos
 #   docker compose down -v        → borra los contenedores y los datos
 
@@ -35,6 +35,15 @@ services:
       OSRM_HABILITADO: ${OSRM_HABILITADO:-true}
     ports:
       - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: orion-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
 
 volumes:
   pgdata:
